@@ -1,0 +1,15 @@
+package dev.dini.scms.supplier.dto;
+
+import jakarta.validation.constraints.Email;
+
+import java.io.Serializable;
+
+public record SupplierRequestDTO(
+        String name,
+        String phoneNumber,
+        @Email String email,
+        AddressDTO address,
+        String website,
+        double rating
+) implements Serializable {
+}

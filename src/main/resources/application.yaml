@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: scm
+
+  datasource:
+    url: jdbc:postgresql://localhost:6000/postgres
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create # Use 'create-drop' for development; switch to 'validate' or 'none' in production
+    show-sql: true
+
+  sql:
+    init:
+      mode: never # Disable automatic schema creation

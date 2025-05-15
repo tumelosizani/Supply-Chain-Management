@@ -1,0 +1,76 @@
+@startuml
+entity "Supplier" {
+  +supplier_id : int
+  name : string
+  phone_number : string
+  email : string
+  address : Address
+  website : string
+  rating : double
+}
+
+entity "Product" {
+  +product_id : int
+  product_name : string
+  category : string
+  price : decimal
+}
+
+entity "Inventory" {
+  +inventory_id : int
+  +product_id : int
+  quantity_in_stock : int
+}
+
+entity "CustomerOrder" {
+  +order_id : int
+  order_date : date
+  status : CustomerOrderStatus
+  shipping_address : string
+}
+
+entity "CustomerOrderItem" {
+  +customer_order_id : int
+  +product_id : int
+  quantity : int
+}
+
+entity "PurchaseOrder" {
+  +purchase_order_id : int
+  order_date : date
+  expected_delivery_date : date
+  status : PurchaseOrderStatus
+}
+
+entity "PurchaseOrderItem" {
+  +purchase_order_id : int
+  +product_id : int
+  quantity : int
+  unit_price : decimal
+}
+
+entity "Shipment" {
+  +shipment_id : int
+  +purchase_order_id : int
+  shipment_date : date
+  status : ShipmentStatus
+  +order_id : int
+  tracking_number : string
+  carrier : string
+}
+
+' Relationships
+Supplier -- "0..*" Product : supplies
+Supplier -- "0..*" PurchaseOrder : receives
+Product -- "1..*" Inventory : stored in
+Product -- "0..*" CustomerOrderItem : appears in
+Product -- "0..*" PurchaseOrderItem : appears in
+CustomerOrder -- "1..*" CustomerOrderItem : contains
+CustomerOrder -- "1..*" Shipment : ships with
+PurchaseOrder -- "1..*" PurchaseOrderItem : contains
+PurchaseOrder -- "1..*" Shipment : ships in
+PurchaseOrderItem -- "1" Product : refers to
+CustomerOrderItem -- "1" Product : refers to
+Shipment -- "1" CustomerOrder : belongs to
+PurchaseOrder -- "1" Supplier : placed with
+@enduml
