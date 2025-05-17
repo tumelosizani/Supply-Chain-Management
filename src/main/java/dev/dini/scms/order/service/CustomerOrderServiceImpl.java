@@ -29,7 +29,6 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
     private final CustomerOrderRepository customerOrderRepository;
     private final CustomerOrderMapper customerOrderMapper;
     private final CustomerOrderItemMapper customerOrderItemMapper;
-    private final CustomerOrderItemRepository customerOrderItemRepository; // Added
     private final InventoryService inventoryService;
     private final ReservationService reservationService;
 

@@ -26,30 +26,7 @@ public class PurchaseOrderItemServiceImpl implements  PurchaseOrderItemService {
     private final PurchaseOrderCalculationService calculationService; // Inject the calculation service
 
 
-    @Override
-    @Transactional
-    public PurchaseOrderItemResponseDTO createPurchaseOrderItem(PurchaseOrderItemRequestDTO createDTO) {
-        if (createDTO.purchaseOrderId() == null) {
-            throw new IllegalArgumentException("Purchase Order ID must not be null when creating a purchase order item.");
-        }
-        log.info("Creating purchase order item {}", createDTO);
-        PurchaseOrderItem orderItem = purchaseOrderItemMapper.toEntity(createDTO);
 
-        // Fetch purchase order details from the purchase order service
-        orderItem.setPurchaseOrder(purchaseOrderRepository.findById(createDTO.purchaseOrderId())
-                .orElseThrow(() -> new PurchaseOrderNotFoundException(createDTO.purchaseOrderId())));
-
-        // Fetch the Product entity only if productId is not null
-        if (createDTO.productId() != null) {
-            orderItem.setProduct(productService.getProductEntityById(createDTO.productId()));
-        }
-        orderItem.setQuantity(createDTO.quantity());
-        orderItem.setUnitPrice(createDTO.unitPrice()); // Ensure unit price is set
-
-        PurchaseOrderItem savedPurchaseOrderItem = purchaseOrderItemRepository.save(orderItem);
-        log.info("Purchase order item created {}", savedPurchaseOrderItem);
-        return purchaseOrderItemMapper.toResponseDTO(savedPurchaseOrderItem);
-    }
 
     @Override
     @Transactional
@@ -80,14 +57,6 @@ public class PurchaseOrderItemServiceImpl implements  PurchaseOrderItemService {
         return purchaseOrderItemMapper.toResponseDTO(purchaseOrderItem);
     }
 
-    @Override
-    public PurchaseOrderItem getEntityById(Long id) {
-        return findPurchaseOrderItemById(id);
-    }
-
-    public BigDecimal getItemTotalPrice(PurchaseOrderItem item) { // Optional: Expose calculation through the service
-        return calculationService.calculateItemTotalPrice(item);
-    }
 
     private PurchaseOrderItem findPurchaseOrderItemById(Long id) {
         return purchaseOrderItemRepository.findById(id)
