@@ -1,17 +1,11 @@
 package dev.dini.scms.order.service;
 
-import dev.dini.scms.inventory.service.InventoryService;
-import dev.dini.scms.inventory.service.ReservationService;
+import dev.dini.scms.inventory.service.*;
 import dev.dini.scms.order.dto.*;
-import dev.dini.scms.order.entity.CustomerOrder;
-import dev.dini.scms.order.entity.CustomerOrderItem;
-import dev.dini.scms.order.entity.CustomerOrderStatus;
-import dev.dini.scms.order.mapper.CustomerOrderMapper;
-import dev.dini.scms.order.mapper.CustomerOrderItemMapper;
+import dev.dini.scms.order.entity.*;
+import dev.dini.scms.order.mapper.*;
 import dev.dini.scms.order.repository.CustomerOrderRepository;
-import dev.dini.scms.order.repository.CustomerOrderItemRepository; // Added
-import dev.dini.scms.util.exception.CustomerOrderNotFoundException;
-import dev.dini.scms.util.exception.InsufficientInventoryException;
+import dev.dini.scms.util.exception.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -112,7 +106,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         CustomerOrder order = findCustomerOrderById(orderId);
 
         // Check inventory availability before adding the item
-        if (!inventoryService.isInventoryAvailable(itemRequestDTO.productId(), itemRequestDTO.quantity())) {
+        if (inventoryService.isInventoryAvailable(itemRequestDTO.productId(), itemRequestDTO.quantity())) {
             throw new InsufficientInventoryException("Insufficient inventory for product ID: " + itemRequestDTO.productId());
         }
 
@@ -137,7 +131,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         int quantityDifference = itemRequestDTO.quantity() - itemToUpdate.getQuantity();
 
         // Check new quantity against available
-        if (quantityDifference > 0 && !inventoryService.isInventoryAvailable(itemToUpdate.getProduct().getId(), quantityDifference)) {
+        if (quantityDifference > 0 && inventoryService.isInventoryAvailable(itemToUpdate.getProduct().getId(), quantityDifference)) {
             throw new InsufficientInventoryException("Insufficient inventory to update order item quantity.");
         }
         itemToUpdate.setQuantity(itemRequestDTO.quantity());
@@ -187,7 +181,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
     public boolean checkInventoryAvailability(List<CustomerOrderItemRequestDTO> items) {
         log.info("Checking inventory availability for {} items", items.size());
         for (CustomerOrderItemRequestDTO item : items) {
-            if (!inventoryService.isInventoryAvailable(item.productId(), item.quantity())) {
+            if (inventoryService.isInventoryAvailable(item.productId(), item.quantity())) {
                 log.warn("Insufficient inventory for product ID: {}, requested quantity: {}",
                         item.productId(), item.quantity());
                 return false;

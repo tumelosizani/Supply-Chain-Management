@@ -2,17 +2,13 @@ package dev.dini.scms.procurement.service;
 
 import dev.dini.scms.procurement.dto.*;
 import dev.dini.scms.procurement.entity.PurchaseOrderItem;
-import dev.dini.scms.procurement.repository.PurchaseOrderRepository;
 import dev.dini.scms.util.exception.PurchaseOrderNotFoundException;
 import dev.dini.scms.procurement.mapper.PurchaseOrderItemMapper;
 import dev.dini.scms.procurement.repository.PurchaseOrderItemRepository;
-import dev.dini.scms.product.service.ProductService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.math.BigDecimal;
 
 @Slf4j
 @Service
@@ -21,10 +17,6 @@ public class PurchaseOrderItemServiceImpl implements  PurchaseOrderItemService {
 
     private final PurchaseOrderItemRepository purchaseOrderItemRepository;
     private final PurchaseOrderItemMapper purchaseOrderItemMapper;
-    private final PurchaseOrderRepository purchaseOrderRepository;
-    private final ProductService productService;
-    private final PurchaseOrderCalculationService calculationService; // Inject the calculation service
-
 
 
 

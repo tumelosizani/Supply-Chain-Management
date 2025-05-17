@@ -40,7 +40,6 @@ public interface InventoryService {
      * Saves the given inventory entity and returns its response DTO.
      *
      * @param inventory the inventory entity to save
-     * @return the saved inventory as a response DTO
      */
-    InventoryResponseDTO saveInventory(Inventory inventory);
+    void saveInventory(Inventory inventory);
 }

@@ -96,9 +96,9 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     @Transactional
-    public InventoryResponseDTO saveInventory(Inventory inventory) {
+    public void saveInventory(Inventory inventory) {
         Inventory savedInventory = inventoryRepository.save(inventory);
-        return inventoryMapper.toResponseDTO(savedInventory);
+        inventoryMapper.toResponseDTO(savedInventory);
     }
 
     @Override
@@ -112,10 +112,10 @@ public class InventoryServiceImpl implements InventoryService {
                     productId, availableQuantity, inventory.getQuantity(),
                     inventory.getQuantityReserved() != null ? inventory.getQuantityReserved() : 0, 
                     quantity, isAvailable);
-            return isAvailable;
+            return !isAvailable;
         } catch (InventoryNotFoundException e) {
             log.warn("Inventory not found for product ID: {}", productId);
-            return false;
+            return true;
         }
     }
 

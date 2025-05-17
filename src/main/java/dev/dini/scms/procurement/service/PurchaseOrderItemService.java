@@ -1,7 +1,6 @@
 package dev.dini.scms.procurement.service;
 
 import dev.dini.scms.procurement.dto.*;
-import dev.dini.scms.procurement.entity.PurchaseOrderItem;
 
 public interface PurchaseOrderItemService {
 
