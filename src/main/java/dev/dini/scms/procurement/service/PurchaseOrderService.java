@@ -13,5 +13,4 @@ public interface PurchaseOrderService {
 
     PurchaseOrderResponseDTO getPurchaseOrderById(Long id);
 
-    PurchaseOrder getEntityById(Long id);
 }
