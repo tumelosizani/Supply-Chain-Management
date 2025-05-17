@@ -1,4 +1,4 @@
-package dev.dini.scms.supplier.dto;
+package dev.dini.scms.util.dto;
 
 import jakarta.validation.constraints.NotBlank;
 

@@ -14,11 +14,6 @@ public class PurchaseOrderItemController {
 
     private final PurchaseOrderItemService orderItemService;
 
-    @PostMapping
-    public ResponseEntity<PurchaseOrderItemResponseDTO> createPurchaseOrderItem(@RequestBody PurchaseOrderItemRequestDTO createDTO) {
-        PurchaseOrderItemResponseDTO response = orderItemService.createPurchaseOrderItem(createDTO);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
 
     @PatchMapping("/{id}")
     public ResponseEntity<PurchaseOrderItemResponseDTO> updatePurchaseOrderItem(@PathVariable Long id, @RequestBody PurchaseOrderItemRequestDTO updateDTO) {

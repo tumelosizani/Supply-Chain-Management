@@ -3,19 +3,23 @@ package dev.dini.scms.order.service;
 import dev.dini.scms.inventory.service.InventoryService;
 import dev.dini.scms.inventory.service.ReservationService;
 import dev.dini.scms.order.dto.*;
-import dev.dini.scms.order.entity.*;
+import dev.dini.scms.order.entity.CustomerOrder;
+import dev.dini.scms.order.entity.CustomerOrderItem;
+import dev.dini.scms.order.entity.CustomerOrderStatus;
+import dev.dini.scms.order.mapper.CustomerOrderMapper;
+import dev.dini.scms.order.mapper.CustomerOrderItemMapper;
+import dev.dini.scms.order.repository.CustomerOrderRepository;
+import dev.dini.scms.order.repository.CustomerOrderItemRepository; // Added
 import dev.dini.scms.util.exception.CustomerOrderNotFoundException;
 import dev.dini.scms.util.exception.InsufficientInventoryException;
-import dev.dini.scms.order.mapper.CustomerOrderMapper;
-import dev.dini.scms.order.repository.CustomerOrderRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -24,68 +28,74 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
 
     private final CustomerOrderRepository customerOrderRepository;
     private final CustomerOrderMapper customerOrderMapper;
-    private final CustomerOrderItemService customerOrderItemService;
+    private final CustomerOrderItemMapper customerOrderItemMapper;
+    private final CustomerOrderItemRepository customerOrderItemRepository; // Added
     private final InventoryService inventoryService;
     private final ReservationService reservationService;
 
     @Override
     @Transactional
     public CustomerOrderResponseDTO createCustomerOrder(CustomerOrderRequestDTO createDTO) {
-        log.info("Creating customer order {}", createDTO);
+        log.info("Creating customer order from DTO: {}", createDTO);
 
-        // Check inventory availability before proceeding
         if (!checkInventoryAvailability(createDTO.items())) {
             throw new InsufficientInventoryException("Insufficient inventory for one or more items in the order");
         }
 
         CustomerOrder order = customerOrderMapper.toEntity(createDTO);
         order.setStatus(CustomerOrderStatus.PENDING);
-        order = customerOrderRepository.save(order); // Save the order first to get the ID
 
-        List<CustomerOrderItem> orderItems = new ArrayList<>();
-        for (CustomerOrderItemRequestDTO itemDTO : createDTO.items()) {
-            CustomerOrderItemRequestDTO itemRequestDTO = new CustomerOrderItemRequestDTO(
-                    itemDTO.productId(),
-                    itemDTO.quantity(),
-                    order.getId() // Now we have the order ID to pass
-            );
-            CustomerOrderItemResponseDTO itemResponseDTO = customerOrderItemService.createCustomerOrderItem(itemRequestDTO);
-            CustomerOrderItem orderItem = customerOrderItemService.getEntityById(itemResponseDTO.id());
-            orderItems.add(orderItem);
-        }
+        List<CustomerOrderItem> orderItems = createOrderItemsFromDTOs(createDTO.items(), order);
         order.setItems(orderItems);
 
-        // Reserve the inventory for the order
-        reserveInventory(createDTO.items());
-
-        // Update order status to PROCESSING after reservation
-        order.setStatus(CustomerOrderStatus.PROCESSING);
-        
         CustomerOrder savedOrder = customerOrderRepository.save(order);
-        log.info("Customer order created with status {} and ID {}", savedOrder.getStatus(), savedOrder.getId());
-        return customerOrderMapper.toResponseDTO(savedOrder);
+        reserveInventory(createDTO.items());
+        savedOrder.setStatus(CustomerOrderStatus.PROCESSING);
+        CustomerOrder updatedOrder = customerOrderRepository.save(savedOrder);
+
+        log.info("Customer order created with status {} and ID {}", updatedOrder.getStatus(), updatedOrder.getId());
+        return customerOrderMapper.toResponseDTO(updatedOrder);
+    }
+
+    private List<CustomerOrderItem> createOrderItemsFromDTOs(List<CustomerOrderItemRequestDTO> itemDTOs, CustomerOrder order) {
+        return itemDTOs.stream()
+                .map(itemDTO -> {
+                    CustomerOrderItem orderItem = customerOrderItemMapper.toEntity(itemDTO);
+                    orderItem.setCustomerOrder(order);
+                    return orderItem;
+                })
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional
     public CustomerOrderResponseDTO updateCustomerOrder(Long id, CustomerOrderRequestDTO updateDTO) {
-        log.info("Updating customer order {}", updateDTO);
+        log.info("Updating customer order with ID {}, using DTO: {}", id, updateDTO);
         CustomerOrder customerOrder = findCustomerOrderById(id);
         customerOrderMapper.partialUpdate(updateDTO, customerOrder);
         CustomerOrder updatedCustomerOrder = customerOrderRepository.save(customerOrder);
-        log.info("Customer order updated {}", updatedCustomerOrder);
+        log.info("Customer order updated: {}", updatedCustomerOrder);
         return customerOrderMapper.toResponseDTO(updatedCustomerOrder);
     }
 
     @Override
+    @Transactional
     public void deleteCustomerOrder(Long id) {
-        log.info("Deleting customer order {}", id);
+        log.info("Deleting customer order with ID: {}", id);
+        CustomerOrder order = findCustomerOrderById(id);
+        if (order.getStatus() == CustomerOrderStatus.PROCESSING) {
+            for (CustomerOrderItem item : order.getItems()) {
+                reservationService.releaseReservation(item.getProduct().getId(), item.getQuantity());
+                log.info("Released reservation for product ID: {}, quantity: {} during order deletion", item.getProduct().getId(), item.getQuantity());
+            }
+        }
         customerOrderRepository.deleteById(id);
+        log.info("Customer order with ID {} deleted", id);
     }
 
     @Override
     public CustomerOrderResponseDTO getCustomerOrderById(Long id) {
-        log.info("Getting customer order {}", id);
+        log.info("Getting customer order by ID: {}", id);
         CustomerOrder customerOrder = findCustomerOrderById(id);
         return customerOrderMapper.toResponseDTO(customerOrder);
     }
@@ -99,65 +109,84 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
     @Override
     @Transactional
     public CustomerOrderResponseDTO addItemToOrder(Long orderId, CustomerOrderItemRequestDTO itemRequestDTO) {
-        log.info("Adding item to order {}", orderId);
+        log.info("Adding item to order ID {}: {}", orderId, itemRequestDTO);
         CustomerOrder order = findCustomerOrderById(orderId);
 
-        //  Set the customerOrderId in the DTO.
-        CustomerOrderItemRequestDTO itemRequest = new CustomerOrderItemRequestDTO(
-                itemRequestDTO.productId(),
-                itemRequestDTO.quantity(),
-                orderId
-        );
-        CustomerOrderItemResponseDTO itemResponseDTO = customerOrderItemService.createCustomerOrderItem(itemRequest);
-        CustomerOrderItem orderItem = customerOrderItemService.getEntityById(itemResponseDTO.id());
-        order.getItems().add(orderItem);
+        // Check inventory availability before adding the item
+        if (!inventoryService.isInventoryAvailable(itemRequestDTO.productId(), itemRequestDTO.quantity())) {
+            throw new InsufficientInventoryException("Insufficient inventory for product ID: " + itemRequestDTO.productId());
+        }
 
+        CustomerOrderItem orderItem = customerOrderItemMapper.toEntity(itemRequestDTO);
+        orderItem.setCustomerOrder(order);
+        order.getItems().add(orderItem);
         CustomerOrder updatedOrder = customerOrderRepository.save(order);
-        log.info("Item added to order");
+
+        reservationService.reserveInventory(itemRequestDTO.productId(), itemRequestDTO.quantity());
+        log.info("Item added to order ID {}.  Reserved quantity {} of product ID {}", orderId, itemRequestDTO.quantity(), itemRequestDTO.productId());
         return customerOrderMapper.toResponseDTO(updatedOrder);
     }
 
     @Override
     @Transactional
     public CustomerOrderResponseDTO updateOrderItem(Long orderId, Long itemId, CustomerOrderItemRequestDTO itemRequestDTO) {
-        log.info("Updating item {} in order {}", itemId, orderId);
+        log.info("Updating item ID {} in order ID {} with DTO: {}", itemId, orderId, itemRequestDTO);
         CustomerOrder order = findCustomerOrderById(orderId);
 
-        CustomerOrderItem itemToUpdate = order.getItems().stream()
-                .filter(item -> item.getId().equals(itemId))
-                .findFirst()
-                .orElseThrow(() -> new NoSuchElementException(
-                        "Order item with id " + itemId + " not found in order " + orderId));
+        CustomerOrderItem itemToUpdate = findOrderItemInOrder(order, itemId);
 
-        // Update the item's properties directly
-        itemToUpdate.setQuantity(itemRequestDTO.quantity());  // Example of updating quantity.  Add other fields as needed.
+        int quantityDifference = itemRequestDTO.quantity() - itemToUpdate.getQuantity();
 
-        CustomerOrder updatedOrder = customerOrderRepository.save(order);
-        log.info("Item updated in order");
-        return customerOrderMapper.toResponseDTO(updatedOrder);
+        // Check new quantity against available
+        if (quantityDifference > 0 && !inventoryService.isInventoryAvailable(itemToUpdate.getProduct().getId(), quantityDifference)) {
+            throw new InsufficientInventoryException("Insufficient inventory to update order item quantity.");
+        }
+        itemToUpdate.setQuantity(itemRequestDTO.quantity());
+        customerOrderRepository.save(order);
+
+        if (quantityDifference != 0) {
+            if (quantityDifference > 0) {
+                reservationService.reserveInventory(itemToUpdate.getProduct().getId(), quantityDifference);
+                log.info("Reserved {} more units of product ID {} for order item update", quantityDifference, itemToUpdate.getProduct().getId());
+            } else {
+                reservationService.releaseReservation(itemToUpdate.getProduct().getId(), Math.abs(quantityDifference));
+                log.info("Released {} units of product ID {} for order item update", Math.abs(quantityDifference), itemToUpdate.getProduct().getId());
+            }
+        }
+        log.info("Item ID {} in order ID {} updated", itemId, orderId);
+        return customerOrderMapper.toResponseDTO(order);
     }
 
     @Override
     @Transactional
     public CustomerOrderResponseDTO removeItemFromOrder(Long orderId, Long itemId) {
-        log.info("Removing item {} from order {}", itemId, orderId);
+        log.info("Removing item ID {} from order ID {}", itemId, orderId);
         CustomerOrder order = findCustomerOrderById(orderId);
 
-        boolean removed = order.getItems().removeIf(item -> item.getId().equals(itemId));
-        if (!removed) {
-            throw new NoSuchElementException(
-                    "Order item with id " + itemId + " not found in order " + orderId);
-        }
+        CustomerOrderItem itemToRemove = findOrderItemInOrder(order, itemId);
+
+        // Release reservation before removing
+        reservationService.releaseReservation(itemToRemove.getProduct().getId(), itemToRemove.getQuantity());
+        log.info("Released {} units of product ID {} for removed order item", itemToRemove.getQuantity(), itemToRemove.getProduct().getId());
+
+        order.getItems().removeIf(item -> item.getId().equals(itemId));
 
         CustomerOrder updatedOrder = customerOrderRepository.save(order);
-        log.info("Item removed from order");
+        log.info("Item ID {} removed from order ID {}", itemId, orderId);
         return customerOrderMapper.toResponseDTO(updatedOrder);
+    }
+
+    private CustomerOrderItem findOrderItemInOrder(CustomerOrder order, Long itemId) {
+        return order.getItems().stream()
+                .filter(item -> item.getId().equals(itemId))
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException(
+                        "Order item with id " + itemId + " not found in order " + order.getId()));
     }
 
     @Override
     public boolean checkInventoryAvailability(List<CustomerOrderItemRequestDTO> items) {
         log.info("Checking inventory availability for {} items", items.size());
-
         for (CustomerOrderItemRequestDTO item : items) {
             if (!inventoryService.isInventoryAvailable(item.productId(), item.quantity())) {
                 log.warn("Insufficient inventory for product ID: {}, requested quantity: {}",
@@ -165,7 +194,6 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
                 return false;
             }
         }
-
         log.info("Inventory check passed for all items");
         return true;
     }
@@ -174,64 +202,57 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
     @Transactional
     public void reserveInventory(List<CustomerOrderItemRequestDTO> items) {
         log.info("Reserving inventory for {} items", items.size());
-
         for (CustomerOrderItemRequestDTO item : items) {
             reservationService.reserveInventory(item.productId(), item.quantity());
             log.info("Reserved {} units of product ID: {}", item.quantity(), item.productId());
         }
-
         log.info("Inventory successfully reserved for all items");
     }
-    
+
     @Override
     @Transactional
     public CustomerOrderResponseDTO confirmOrder(Long orderId) {
         log.info("Confirming order with ID {}", orderId);
         CustomerOrder order = findCustomerOrderById(orderId);
-        
+
         if (order.getStatus() != CustomerOrderStatus.PROCESSING) {
             throw new IllegalStateException("Order cannot be confirmed because it is not in PROCESSING state. Current state: " + order.getStatus());
         }
-        
-        // Confirm the reservation (reduce actual inventory)
+
         for (CustomerOrderItem item : order.getItems()) {
             reservationService.confirmReservation(item.getProduct().getId(), item.getQuantity());
-            log.info("Confirmed reservation of {} units of product ID: {}", 
+            log.info("Confirmed reservation of {} units of product ID: {}",
                     item.getQuantity(), item.getProduct().getId());
         }
-        
+
         order.setStatus(CustomerOrderStatus.CONFIRMED);
         CustomerOrder confirmedOrder = customerOrderRepository.save(order);
         log.info("Order confirmed with ID {}", confirmedOrder.getId());
-        
         return customerOrderMapper.toResponseDTO(confirmedOrder);
     }
-    
+
     @Override
     @Transactional
     public CustomerOrderResponseDTO cancelOrder(Long orderId) {
         log.info("Cancelling order with ID {}", orderId);
         CustomerOrder order = findCustomerOrderById(orderId);
-        
-        // Only allow cancellation of orders in PENDING or PROCESSING state
-        if (order.getStatus() != CustomerOrderStatus.PENDING && 
-            order.getStatus() != CustomerOrderStatus.PROCESSING) {
+
+        if (order.getStatus() != CustomerOrderStatus.PENDING &&
+                order.getStatus() != CustomerOrderStatus.PROCESSING) {
             throw new IllegalStateException("Order cannot be cancelled because it is in " + order.getStatus() + " state");
         }
-        
-        // Release any reserved inventory
+
         if (order.getStatus() == CustomerOrderStatus.PROCESSING) {
             for (CustomerOrderItem item : order.getItems()) {
                 reservationService.releaseReservation(item.getProduct().getId(), item.getQuantity());
-                log.info("Released reservation of {} units of product ID: {}", 
+                log.info("Released reservation of {} units of product ID: {}",
                         item.getQuantity(), item.getProduct().getId());
             }
         }
-        
+
         order.setStatus(CustomerOrderStatus.CANCELLED);
         CustomerOrder cancelledOrder = customerOrderRepository.save(order);
         log.info("Order cancelled with ID {}", cancelledOrder.getId());
-        
         return customerOrderMapper.toResponseDTO(cancelledOrder);
     }
 
@@ -241,3 +262,4 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
                 .orElseThrow(() -> new CustomerOrderNotFoundException(id));
     }
 }
+

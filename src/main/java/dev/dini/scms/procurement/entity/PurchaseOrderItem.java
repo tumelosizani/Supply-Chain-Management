@@ -26,7 +26,7 @@ public class PurchaseOrderItem extends BaseEntity {
 
     private BigDecimal unitPrice;
 
-    @ManyToOne
-    @JoinColumn(name = "purchase_order_id", insertable = false, updatable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "purchase_order_id", nullable = false)
     private PurchaseOrder purchaseOrder;
 }

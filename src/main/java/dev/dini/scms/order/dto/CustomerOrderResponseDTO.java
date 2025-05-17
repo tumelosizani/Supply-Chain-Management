@@ -1,6 +1,7 @@
 package dev.dini.scms.order.dto;
 
 import dev.dini.scms.order.entity.CustomerOrderStatus;
+import dev.dini.scms.util.dto.AddressDTO;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -11,7 +12,7 @@ public record CustomerOrderResponseDTO(
         Long id,
         Date orderDate,
         CustomerOrderStatus status,
-        String shippingAddress,
+        AddressDTO shippingAddress,
         List<CustomerOrderItemResponseDTO> items,
         LocalDateTime createdAt,
         LocalDateTime updatedAt

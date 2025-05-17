@@ -107,10 +107,11 @@ public class InventoryServiceImpl implements InventoryService {
         try {
             Inventory inventory = inventoryUtil.findInventoryByProductId(productId);
             Integer availableQuantity = calculationService.getAvailableQuantity(inventory);
-            boolean isAvailable = availableQuantity != null && availableQuantity >= quantity;
+            boolean isAvailable = availableQuantity >= quantity;
             log.info("Product ID {} has {} available in stock (total: {}, reserved: {}). Required: {}. Available: {}",
                     productId, availableQuantity, inventory.getQuantity(),
-                    inventory.getQuantityReserved(), quantity, isAvailable);
+                    inventory.getQuantityReserved() != null ? inventory.getQuantityReserved() : 0, 
+                    quantity, isAvailable);
             return isAvailable;
         } catch (InventoryNotFoundException e) {
             log.warn("Inventory not found for product ID: {}", productId);
@@ -124,4 +125,3 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
 }
-

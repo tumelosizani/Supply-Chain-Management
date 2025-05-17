@@ -10,6 +10,7 @@ public interface PurchaseOrderItemMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "purchaseOrder", ignore = true)
     @Mapping(target = "product", ignore = true)
+    @Mapping(source = "productId", target = "product.id")
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     PurchaseOrderItem toEntity(PurchaseOrderItemRequestDTO orderItemRequestDTO);
@@ -21,6 +22,7 @@ public interface PurchaseOrderItemMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "purchaseOrder", ignore = true)
     @Mapping(target = "product", ignore = true)
+    @Mapping(source = "productId", target = "product.id")
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)

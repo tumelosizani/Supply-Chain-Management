@@ -16,25 +16,25 @@ public class CustomerOrderController {
     private final CustomerOrderService orderService;
 
     @PostMapping
-    public ResponseEntity<CustomerOrderResponseDTO> createPurchaseOrder(@RequestBody CustomerOrderRequestDTO createDTO) {
+    public ResponseEntity<CustomerOrderResponseDTO> createCustomerOrder(@RequestBody CustomerOrderRequestDTO createDTO) {
         CustomerOrderResponseDTO response = orderService.createCustomerOrder(createDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<CustomerOrderResponseDTO> updatePurchaseOrder(@PathVariable Long id, @RequestBody CustomerOrderRequestDTO updateDTO) {
+    public ResponseEntity<CustomerOrderResponseDTO> updateCustomerOrder(@PathVariable Long id, @RequestBody CustomerOrderRequestDTO updateDTO) {
         CustomerOrderResponseDTO response = orderService.updateCustomerOrder(id, updateDTO);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletePurchaseOrder(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteCustomerOrder(@PathVariable Long id) {
         orderService.deleteCustomerOrder(id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<CustomerOrderResponseDTO> getPurchaseOrderById(@PathVariable Long id) {
+    public ResponseEntity<CustomerOrderResponseDTO> getCustomerOrderById(@PathVariable Long id) {
         CustomerOrderResponseDTO response = orderService.getCustomerOrderById(id);
         return ResponseEntity.ok(response);
     }
