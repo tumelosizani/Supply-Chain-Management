@@ -42,4 +42,8 @@ public interface InventoryService {
      * @param inventory the inventory entity to save
      */
     void saveInventory(Inventory inventory);
+
+    int getStockLevel(Long productId);
+
+    InventoryResponseDTO addStock(StockUpdateRequestDTO request);
 }

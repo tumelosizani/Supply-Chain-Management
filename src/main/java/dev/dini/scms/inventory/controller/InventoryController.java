@@ -2,6 +2,7 @@ package dev.dini.scms.inventory.controller;
 
 import dev.dini.scms.inventory.dto.*;
 import dev.dini.scms.inventory.service.InventoryService;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,5 +42,20 @@ public class InventoryController {
     public ResponseEntity<List<InventorySummaryDTO>> getAllInventorySummaries() {
         List<InventorySummaryDTO> summaries = inventoryService.getAllInventorySummaries();
         return ResponseEntity.ok(summaries);
+    }
+
+    @GetMapping("/stock-level/{productId}")
+    public ResponseEntity<Integer> getStockLevel(@PathVariable Long productId) {
+        try {
+            return ResponseEntity.ok(inventoryService.getStockLevel(productId));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PostMapping("/add-stock")
+    public ResponseEntity<InventoryResponseDTO> addStock(@RequestBody @Valid StockUpdateRequestDTO request) {
+        InventoryResponseDTO inventoryResponseDTO = inventoryService.addStock(request);
+        return ResponseEntity.ok(inventoryResponseDTO);
     }
 }

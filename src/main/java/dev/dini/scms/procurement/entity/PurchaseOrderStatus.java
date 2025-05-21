@@ -9,7 +9,8 @@ public enum PurchaseOrderStatus {
     SHIPPED("Shipped"),
     DELIVERED("Delivered"),
     CANCELLED("Cancelled"),
-    RETURNED("Returned");
+    RETURNED("Returned"),
+    FULLY_RECEIVED("Fully Received"),;
 
 
     private final String description;

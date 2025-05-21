@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
@@ -36,6 +37,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         }
 
         CustomerOrder order = customerOrderMapper.toEntity(createDTO);
+        order.setOrderDate(new Date());
         order.setStatus(CustomerOrderStatus.PENDING);
 
         List<CustomerOrderItem> orderItems = createOrderItemsFromDTOs(createDTO.items(), order);
@@ -43,7 +45,6 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
 
         CustomerOrder savedOrder = customerOrderRepository.save(order);
         reserveInventory(createDTO.items());
-        savedOrder.setStatus(CustomerOrderStatus.PROCESSING);
         CustomerOrder updatedOrder = customerOrderRepository.save(savedOrder);
 
         log.info("Customer order created with status {} and ID {}", updatedOrder.getStatus(), updatedOrder.getId());
@@ -62,9 +63,9 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
 
     @Override
     @Transactional
-    public CustomerOrderResponseDTO updateCustomerOrder(Long id, CustomerOrderRequestDTO updateDTO) {
-        log.info("Updating customer order with ID {}, using DTO: {}", id, updateDTO);
-        CustomerOrder customerOrder = findCustomerOrderById(id);
+    public CustomerOrderResponseDTO updateCustomerOrder(Long orderId, CustomerOrderRequestDTO updateDTO) {
+        log.info("Updating customer order with ID {}, using DTO: {}", orderId, updateDTO);
+        CustomerOrder customerOrder = findCustomerOrderById(orderId);
         customerOrderMapper.partialUpdate(updateDTO, customerOrder);
         CustomerOrder updatedCustomerOrder = customerOrderRepository.save(customerOrder);
         log.info("Customer order updated: {}", updatedCustomerOrder);
@@ -73,30 +74,30 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
 
     @Override
     @Transactional
-    public void deleteCustomerOrder(Long id) {
-        log.info("Deleting customer order with ID: {}", id);
-        CustomerOrder order = findCustomerOrderById(id);
+    public void deleteCustomerOrder(Long orderId) {
+        log.info("Deleting customer order with ID: {}", orderId);
+        CustomerOrder order = findCustomerOrderById(orderId);
         if (order.getStatus() == CustomerOrderStatus.PROCESSING) {
             for (CustomerOrderItem item : order.getItems()) {
                 reservationService.releaseReservation(item.getProduct().getId(), item.getQuantity());
                 log.info("Released reservation for product ID: {}, quantity: {} during order deletion", item.getProduct().getId(), item.getQuantity());
             }
         }
-        customerOrderRepository.deleteById(id);
-        log.info("Customer order with ID {} deleted", id);
+        customerOrderRepository.deleteById(orderId);
+        log.info("Customer order with ID {} deleted", orderId);
     }
 
     @Override
-    public CustomerOrderResponseDTO getCustomerOrderById(Long id) {
-        log.info("Getting customer order by ID: {}", id);
-        CustomerOrder customerOrder = findCustomerOrderById(id);
+    public CustomerOrderResponseDTO getCustomerOrderById(Long orderId) {
+        log.info("Getting customer order by ID: {}", orderId);
+        CustomerOrder customerOrder = findCustomerOrderById(orderId);
         return customerOrderMapper.toResponseDTO(customerOrder);
     }
 
     @Override
-    public CustomerOrder getEntityById(Long id) {
-        return customerOrderRepository.findById(id)
-                .orElseThrow(() -> new CustomerOrderNotFoundException(id));
+    public CustomerOrder getEntityById(Long orderId) {
+        return customerOrderRepository.findById(orderId)
+                .orElseThrow(() -> new CustomerOrderNotFoundException(orderId));
     }
 
     @Override
@@ -202,6 +203,24 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         log.info("Inventory successfully reserved for all items");
     }
 
+
+    @Override
+    @Transactional
+    public void processOrder(Long orderId) {
+        log.info("Moving order ID {} to PROCESSING state", orderId);
+        CustomerOrder order = findCustomerOrderById(orderId);
+        
+        if (order.getStatus() != CustomerOrderStatus.PENDING) {
+            throw new IllegalStateException("Order cannot be processed because it is not in PENDING state. Current state: " + order.getStatus());
+        }
+
+        
+        order.setStatus(CustomerOrderStatus.PROCESSING);
+        CustomerOrder processedOrder = customerOrderRepository.save(order);
+        log.info("Order ID {} is now in PROCESSING state", processedOrder.getId());
+        customerOrderMapper.toResponseDTO(processedOrder);
+    }
+
     @Override
     @Transactional
     public CustomerOrderResponseDTO confirmOrder(Long orderId) {
@@ -249,10 +268,18 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         return customerOrderMapper.toResponseDTO(cancelledOrder);
     }
 
+    @Override
+    public List<CustomerOrderResponseDTO> getAllCustomerOrders() {
+        log.info("Fetching all customer orders");
+        List<CustomerOrder> orders = customerOrderRepository.findAll();
+        return orders.stream()
+                .map(customerOrderMapper::toResponseDTO)
+                .toList();
+    }
+
     private CustomerOrder findCustomerOrderById(Long id) {
         log.info("Finding customer order by id {}", id);
         return customerOrderRepository.findById(id)
                 .orElseThrow(() -> new CustomerOrderNotFoundException(id));
     }
 }
-

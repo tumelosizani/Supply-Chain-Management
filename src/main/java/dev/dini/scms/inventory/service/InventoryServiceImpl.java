@@ -29,10 +29,15 @@ public class InventoryServiceImpl implements InventoryService {
     @Transactional
     public InventoryResponseDTO createInventory(InventoryRequestDTO createDTO) {
         log.info("Creating inventory {}", createDTO);
+
+        if (inventoryUtil.existsByProductId(createDTO.productId())) {
+            throw new EntityAlreadyExistsException("Inventory already exists for product ID: " + createDTO.productId());
+        }
+
         Inventory inventory = inventoryMapper.toEntity(createDTO);
 
         // Fetch product details from the product service
-        inventory.setProduct(productService.getProductEntityById(createDTO.productId()));
+        inventory.setProduct(productService.getEntityById(createDTO.productId()));
 
         Inventory savedInventory = inventoryRepository.save(inventory);
         log.info("Inventory created {}", savedInventory);
@@ -117,6 +122,32 @@ public class InventoryServiceImpl implements InventoryService {
             log.warn("Inventory not found for product ID: {}", productId);
             return true;
         }
+    }
+
+    @Override
+    public int getStockLevel(Long productId) {
+        log.info("Getting stock level for product ID {}", productId);
+        Inventory inventory = inventoryUtil.findInventoryByProductId(productId);
+        int quantity = inventory.getQuantity();
+        log.info("Quantity for product ID {} is {}", productId, quantity);
+        return quantity;
+    }
+
+
+    @Override
+    public InventoryResponseDTO addStock(StockUpdateRequestDTO request) {
+        log.info("Adding stock for product ID {} with quantity {}", request.productId(), request.quantity());
+
+        // Check if the product ID is valid and if the inventory exists.
+        Inventory inventory = inventoryUtil.findInventoryByProductId(request.productId());
+
+        // Update the quantity
+        inventory.setQuantity(inventory.getQuantity() + request.quantity());
+
+
+        Inventory savedInventory = inventoryRepository.save(inventory);
+        log.info("Stock added for product ID {}. New quantity: {}", request.productId(), savedInventory.getQuantity());
+        return inventoryMapper.toResponseDTO(savedInventory);
     }
 
     private Inventory findInventoryById(Long id) {

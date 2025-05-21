@@ -89,9 +89,33 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         return purchaseOrderMapper.toResponseDTO(purchaseOrder);
     }
 
+    @Override
+    public List<PurchaseOrderResponseDTO> getAllPurchaseOrders() {
+        log.info("Fetching all purchase orders");
+        List<PurchaseOrder> purchaseOrders = purchaseOrderRepository.findAll();
+        log.info("Total purchase orders found: {}", purchaseOrders.size());
+        return purchaseOrders.stream()
+                .map(purchaseOrderMapper::toResponseDTO)
+                .toList();
+    }
+
+    @Override
+    public PurchaseOrderResponseDTO updatePurchaseOrderStatus(Long id, PurchaseOrderStatus status) {
+        log.info("Updating purchase order status with ID: {} to {}", id, status);
+
+        // Fetch the existing purchase order
+        PurchaseOrder purchaseOrder = findPurchaseOrderById(id);
+        purchaseOrder.setStatus(status);
+        PurchaseOrder updatedPurchaseOrder = purchaseOrderRepository.save(purchaseOrder);
+
+        log.info("Purchase order status updated with ID {}. New status: {}", updatedPurchaseOrder.getId(), status);
+        return purchaseOrderMapper.toResponseDTO(updatedPurchaseOrder);
+    }
+
 
     private PurchaseOrder findPurchaseOrderById(Long id) {
         return purchaseOrderRepository.findById(id)
                 .orElseThrow(() -> new PurchaseOrderNotFoundException(id));
     }
+
 }
