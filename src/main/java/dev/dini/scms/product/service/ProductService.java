@@ -20,7 +20,5 @@ public interface ProductService {
 
     Product getEntityById(Long id);
 
-    List<ProductResponseDTO> getProductsByCategory(String category);
 
-    List<ProductResponseDTO> searchProducts(String query);
 }

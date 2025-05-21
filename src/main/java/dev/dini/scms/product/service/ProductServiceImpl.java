@@ -75,21 +75,6 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new ProductNotFoundException(id));
     }
 
-    @Override
-    public List<ProductResponseDTO> getProductsByCategory(String category) {
-        log.info("Fetching products by category: {}", category);
-        return productRepository.findByCategory(category).stream()
-                .map(productMapper::toResponseDTO)
-                .toList();
-    }
-
-    @Override
-    public List<ProductResponseDTO> searchProducts(String query) {
-        log.info("Searching products with query: {}", query);
-        return productRepository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(query, query).stream()
-                .map(productMapper::toResponseDTO)
-                .toList();
-    }
 
     private Product findProductById(Long id) {
         log.info("Finding product with id {}", id);
