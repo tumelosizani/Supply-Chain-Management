@@ -45,6 +45,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
 
         CustomerOrder savedOrder = customerOrderRepository.save(order);
         reserveInventory(createDTO.items());
+        savedOrder.setStatus(CustomerOrderStatus.PROCESSING);
         CustomerOrder updatedOrder = customerOrderRepository.save(savedOrder);
 
         log.info("Customer order created with status {} and ID {}", updatedOrder.getStatus(), updatedOrder.getId());
