@@ -219,7 +219,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         order.setStatus(CustomerOrderStatus.PROCESSING);
         CustomerOrder processedOrder = customerOrderRepository.save(order);
         log.info("Order ID {} is now in PROCESSING state", processedOrder.getId());
-        customerOrderMapper.toResponseDTO(processedOrder);
+        return customerOrderMapper.toResponseDTO(processedOrder);
     }
 
     @Override
