@@ -3,7 +3,6 @@ package dev.dini.scms.procurement.controller;
 import dev.dini.scms.procurement.dto.*;
 import dev.dini.scms.procurement.service.PurchaseOrderItemService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,11 +13,6 @@ public class PurchaseOrderItemController {
 
     private final PurchaseOrderItemService orderItemService;
 
-    @PostMapping
-    public ResponseEntity<PurchaseOrderItemResponseDTO> createPurchaseOrderItem(@RequestBody PurchaseOrderItemRequestDTO createDTO) {
-        PurchaseOrderItemResponseDTO response = orderItemService.createPurchaseOrderItem(createDTO);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
 
     @PatchMapping("/{id}")
     public ResponseEntity<PurchaseOrderItemResponseDTO> updatePurchaseOrderItem(@PathVariable Long id, @RequestBody PurchaseOrderItemRequestDTO updateDTO) {

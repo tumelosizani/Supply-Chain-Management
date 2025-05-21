@@ -2,6 +2,7 @@ package dev.dini.scms.product.service;
 
 import dev.dini.scms.product.dto.*;
 import dev.dini.scms.product.entity.Product;
+import dev.dini.scms.util.dto.PageResponse;
 import dev.dini.scms.util.exception.ProductNotFoundException;
 import dev.dini.scms.product.mapper.ProductMapper;
 import dev.dini.scms.product.repository.ProductRepository;
@@ -9,9 +10,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -63,46 +62,23 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Page<ProductSummaryDTO> getAllProductSummaries(int page, int size, String sortBy, String sortDirection) {
-        log.info("Fetching all product summaries with pagination (page: {}, size: {}, sortBy: {}, sortDirection: {})",
-                page, size, sortBy, sortDirection);
-
-        Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortBy);
-        Pageable pageable = PageRequest.of(page, size, sort);
-
-        Page<Product> productPage = productRepository.findAll(pageable);
-
-        return productPage.map(productMapper::toSummaryDTO);
+    public PageResponse<ProductSummaryDTO> getAllProductSummaries(Pageable pageable) {
+        Page<ProductSummaryDTO> page = productRepository.findAll(pageable)
+                .map(productMapper::toSummaryDTO);
+        return PageResponse.from(page);
     }
 
     @Override
-    public Product getProductEntityById(Long id) {
+    public Product getEntityById(Long id) {
         log.info("Fetching product entity with id {}", id);
         return productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException(id));
     }
 
-    @Override
-    public List<ProductResponseDTO> getProductsByCategory(String category) {
-        log.info("Fetching products by category: {}", category);
-        return productRepository.findByCategory(category).stream()
-                .map(productMapper::toResponseDTO)
-                .toList();
-    }
-
-    @Override
-    public List<ProductResponseDTO> searchProducts(String query) {
-        log.info("Searching products with query: {}", query);
-        return productRepository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(query, query).stream()
-                .map(productMapper::toResponseDTO)
-                .toList();
-    }
 
     private Product findProductById(Long id) {
         log.info("Finding product with id {}", id);
         return productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException(id));
     }
-
 }
-

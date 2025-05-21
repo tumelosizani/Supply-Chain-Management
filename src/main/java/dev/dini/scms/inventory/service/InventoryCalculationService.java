@@ -8,8 +8,17 @@ public class InventoryCalculationService {
 
     public Integer getAvailableQuantity(Inventory inventory) {
         if (inventory == null) {
-            return null; // Or throw an IllegalArgumentException
+            throw new IllegalArgumentException("Inventory cannot be null");
         }
-        return inventory.getQuantity() - inventory.getQuantityReserved();
+        
+        Integer quantity = inventory.getQuantity();
+        Integer reserved = inventory.getQuantityReserved();
+        
+        // Handle case where quantityReserved is null
+        if (reserved == null) {
+            reserved = 0;
+        }
+        
+        return quantity - reserved;
     }
 }

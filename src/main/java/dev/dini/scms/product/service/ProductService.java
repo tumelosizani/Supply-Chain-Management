@@ -2,7 +2,8 @@ package dev.dini.scms.product.service;
 
 import dev.dini.scms.product.entity.Product;
 import dev.dini.scms.product.dto.*;
-import org.springframework.data.domain.Page;
+import dev.dini.scms.util.dto.PageResponse;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -15,12 +16,9 @@ public interface ProductService {
 
     ProductResponseDTO getProductById(Long id);
 
-    Page<ProductSummaryDTO> getAllProductSummaries(int page, int size, String sortBy, String sortDirection);
+    PageResponse<ProductSummaryDTO> getAllProductSummaries(Pageable pageable);
 
-    Product getProductEntityById(Long id);
+    Product getEntityById(Long id);
 
-    List<ProductResponseDTO> getProductsByCategory(String category);
 
-    List<ProductResponseDTO> searchProducts(String query);
 }
-

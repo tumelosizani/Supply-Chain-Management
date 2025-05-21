@@ -1,6 +1,7 @@
 package dev.dini.scms.order.entity;
 
 import dev.dini.scms.shipment.entity.Shipment;
+import dev.dini.scms.util.Address;
 import dev.dini.scms.util.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -24,7 +25,8 @@ public class CustomerOrder extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private CustomerOrderStatus status;
 
-    private String shippingAddress;
+    @Embedded
+    private Address shippingAddress;
 
     @OneToMany(mappedBy = "customerOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CustomerOrderItem> items;

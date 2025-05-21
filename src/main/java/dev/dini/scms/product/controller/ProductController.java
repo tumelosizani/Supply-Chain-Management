@@ -2,9 +2,10 @@ package dev.dini.scms.product.controller;
 
 import dev.dini.scms.product.dto.*;
 import dev.dini.scms.product.service.ProductService;
+import dev.dini.scms.util.dto.PageResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -41,12 +42,8 @@ public class ProductController {
     }
 
     @GetMapping("/summaries")
-    public ResponseEntity<Page<ProductSummaryDTO>> getAllProductSummaries(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "name") String sortBy,
-            @RequestParam(defaultValue = "asc") String sortDirection) {
-        Page<ProductSummaryDTO> summaries = productService.getAllProductSummaries(page, size, sortBy, sortDirection);
+    public ResponseEntity<PageResponse<ProductSummaryDTO>> getAllProductSummaries(Pageable pageable) {
+        PageResponse<ProductSummaryDTO> summaries = productService.getAllProductSummaries(pageable);
         return ResponseEntity.ok(summaries);
     }
 }

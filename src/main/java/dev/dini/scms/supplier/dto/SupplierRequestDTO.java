@@ -1,5 +1,6 @@
 package dev.dini.scms.supplier.dto;
 
+import dev.dini.scms.util.dto.AddressDTO;
 import jakarta.validation.constraints.Email;
 
 import java.io.Serializable;

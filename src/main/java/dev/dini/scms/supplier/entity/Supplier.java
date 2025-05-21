@@ -1,6 +1,7 @@
 package dev.dini.scms.supplier.entity;
 
 import dev.dini.scms.procurement.entity.PurchaseOrder;
+import dev.dini.scms.util.Address;
 import dev.dini.scms.util.BaseEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;

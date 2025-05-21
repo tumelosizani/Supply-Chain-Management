@@ -31,14 +31,21 @@ public interface CustomerOrderService {
      * @return true if all items have sufficient inventory, false otherwise
      */
     boolean checkInventoryAvailability(List<CustomerOrderItemRequestDTO> items);
-    
+
     /**
      * Reserves inventory for all items in the order by increasing the reserved quantities.
      *
      * @param items the list of order items to reserve inventory for
      */
     void reserveInventory(List<CustomerOrderItemRequestDTO> items);
-    
+
+    /**
+     * Processes the order by checking inventory availability and reserving inventory.
+     *
+     * @param orderId the ID of the order to process
+     */
+    void processOrder(Long orderId);
+
     /**
      * Confirms an order by changing its status to PROCESSING after inventory has been reserved.
      *
@@ -46,7 +53,7 @@ public interface CustomerOrderService {
      * @return the updated order response
      */
     CustomerOrderResponseDTO confirmOrder(Long orderId);
-    
+
     /**
      * Cancels an order and releases any reserved inventory.
      *
@@ -54,4 +61,11 @@ public interface CustomerOrderService {
      * @return the updated order response
      */
     CustomerOrderResponseDTO cancelOrder(Long orderId);
+
+    /**
+     * Retrieves a list of all customer orders.
+     *
+     * @return a list of customer order response DTOs
+     */
+    List<CustomerOrderResponseDTO> getAllCustomerOrders();
 }

@@ -14,9 +14,11 @@ public interface CustomerOrderItemMapper {
     @Mapping(target = "product", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
+    @Mapping(source = "productId", target = "product.id")
+    @Mapping(source = "customerOrderId", target = "customerOrder.id")
     CustomerOrderItem toEntity(CustomerOrderItemRequestDTO orderItemRequestDTO);
 
-    @Mapping( source = "product.id", target = "productId")
+    @Mapping(source = "product.id", target = "productId")
     @Mapping(source = "customerOrder.id", target = "customerOrderId")
     CustomerOrderItemResponseDTO toResponseDTO(CustomerOrderItem customerOrderItem);
 

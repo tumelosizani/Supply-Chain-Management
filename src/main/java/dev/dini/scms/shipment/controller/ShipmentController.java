@@ -8,6 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/shipments")
 @RequiredArgsConstructor
@@ -36,6 +38,13 @@ public class ShipmentController {
     @GetMapping("/{id}")
     public ResponseEntity<ShipmentResponseDTO> getShipment(@PathVariable Long id) {
         ShipmentResponseDTO response = shipmentService.getShipment(id);
+        return ResponseEntity.ok(response);
+    }
+
+
+    @GetMapping
+    public ResponseEntity<List<ShipmentResponseDTO>> getAllShipments() {
+        List<ShipmentResponseDTO> response = shipmentService.getAllShipments();
         return ResponseEntity.ok(response);
     }
 

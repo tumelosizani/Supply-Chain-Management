@@ -1,12 +1,10 @@
 package dev.dini.scms.procurement.service;
 
-
 import dev.dini.scms.procurement.dto.*;
 import dev.dini.scms.procurement.entity.PurchaseOrderItem;
 import dev.dini.scms.util.exception.PurchaseOrderNotFoundException;
 import dev.dini.scms.procurement.mapper.PurchaseOrderItemMapper;
 import dev.dini.scms.procurement.repository.PurchaseOrderItemRepository;
-import dev.dini.scms.product.service.ProductService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,26 +17,8 @@ public class PurchaseOrderItemServiceImpl implements  PurchaseOrderItemService {
 
     private final PurchaseOrderItemRepository purchaseOrderItemRepository;
     private final PurchaseOrderItemMapper purchaseOrderItemMapper;
-    private final PurchaseOrderService purchaseOrderService;
-    private final ProductService productService;
 
 
-    @Override
-    @Transactional
-    public PurchaseOrderItemResponseDTO createPurchaseOrderItem(PurchaseOrderItemRequestDTO createDTO) {
-        log.info("Creating purchase order item {}", createDTO);
-        PurchaseOrderItem orderItem = purchaseOrderItemMapper.toEntity(createDTO);
-
-        // Fetch purchase order details from the purchase order service
-        orderItem.setPurchaseOrder(purchaseOrderService.getEntityById(createDTO.purchaseOrderId()));
-
-        // Fetch the Product entity directly
-        orderItem.setProduct(productService.getProductEntityById(createDTO.productId()));
-
-        PurchaseOrderItem savedPurchaseOrderItem = purchaseOrderItemRepository.save(orderItem);
-        log.info("Purchase order item created {}", savedPurchaseOrderItem);
-        return purchaseOrderItemMapper.toResponseDTO(savedPurchaseOrderItem);
-    }
 
     @Override
     @Transactional
@@ -69,10 +49,9 @@ public class PurchaseOrderItemServiceImpl implements  PurchaseOrderItemService {
         return purchaseOrderItemMapper.toResponseDTO(purchaseOrderItem);
     }
 
+
     private PurchaseOrderItem findPurchaseOrderItemById(Long id) {
         return purchaseOrderItemRepository.findById(id)
                 .orElseThrow(() -> new PurchaseOrderNotFoundException(id));
     }
-
-
 }

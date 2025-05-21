@@ -24,7 +24,6 @@ public interface InventoryService {
      */
     boolean isInventoryAvailable(Long productId, int quantity);
 
-    
 
     /**
      * Reduces the quantity of inventory for a given product.
@@ -36,13 +35,15 @@ public interface InventoryService {
      */
     void reduceInventoryQuantity(Long productId, int quantity);
 
-
-
+    
     /**
      * Saves the given inventory entity and returns its response DTO.
      *
      * @param inventory the inventory entity to save
-     * @return the saved inventory as a response DTO
      */
-    InventoryResponseDTO saveInventory(Inventory inventory);
+    void saveInventory(Inventory inventory);
+
+    int getStockLevel(Long productId);
+
+    InventoryResponseDTO addStock(StockUpdateRequestDTO request);
 }

@@ -3,15 +3,14 @@ package dev.dini.scms.procurement.dto;
 import dev.dini.scms.procurement.entity.PurchaseOrderStatus;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.List;
 
 public record PurchaseOrderResponseDTO(
         Long id,
         Long supplierId,
-        Date date,
+        Date orderDate,
         Date expectedDeliveryDate,
         PurchaseOrderStatus status,
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        List<PurchaseOrderItemResponseDTO> items
 ) implements Serializable { }

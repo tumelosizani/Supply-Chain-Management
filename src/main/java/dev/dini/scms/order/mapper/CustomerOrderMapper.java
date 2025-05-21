@@ -4,7 +4,9 @@ import dev.dini.scms.order.dto.*;
 import dev.dini.scms.order.entity.CustomerOrder;
 import org.mapstruct.*;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = {CustomerOrderItemMapper.class})
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING,
+        uses = {CustomerOrderItemMapper.class}
+)
 public interface CustomerOrderMapper {
 
     @Mapping(target = "id", ignore = true)

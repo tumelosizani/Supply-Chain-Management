@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -60,6 +62,13 @@ public class ShipmentServiceImpl implements ShipmentService {
         Shipment shipment = shipmentRepository.findById(id)
                 .orElseThrow(() -> new ShipmentNotFoundException(id));
         return shipmentMapper.toResponseDTO(shipment);
+    }
+
+    @Override
+    public List<ShipmentResponseDTO> getAllShipments() {
+        return shipmentRepository.findAll().stream()
+                .map(shipmentMapper::toResponseDTO)
+                .toList();
     }
 
     private Shipment findShipmentById(Long id) {

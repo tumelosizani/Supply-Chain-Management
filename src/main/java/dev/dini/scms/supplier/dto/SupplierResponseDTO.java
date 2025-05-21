@@ -1,9 +1,9 @@
 package dev.dini.scms.supplier.dto;
 
+import dev.dini.scms.util.dto.AddressDTO;
 import jakarta.validation.constraints.Email;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
 
 
 public record SupplierResponseDTO(
@@ -13,7 +13,5 @@ public record SupplierResponseDTO(
         @Email String email,
         AddressDTO address,
         String website,
-        double rating,
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        double rating
 ) implements Serializable { }

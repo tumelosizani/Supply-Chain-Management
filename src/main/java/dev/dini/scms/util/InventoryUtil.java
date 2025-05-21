@@ -16,4 +16,9 @@ public class InventoryUtil {
         return inventoryRepository.findByProductId(productId)
                 .orElseThrow(() -> new InventoryNotFoundException("Inventory not found for product ID: " + productId));
     }
+
+    public boolean existsByProductId(Long productId) {
+        return inventoryRepository.existsByProductId(productId);
+    }
+
 }

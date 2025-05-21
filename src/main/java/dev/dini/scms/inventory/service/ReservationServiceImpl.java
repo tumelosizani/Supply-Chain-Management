@@ -46,8 +46,12 @@ public class ReservationServiceImpl implements ReservationService {
          */
         Inventory inventory = inventoryUtil.findInventoryByProductId(productId);
 
-        Integer availableQuantity = calculationService.getAvailableQuantity(inventory);
+        // Initialize quantityReserved to 0 if it's null
+        if (inventory.getQuantityReserved() == null) {
+            inventory.setQuantityReserved(0);
+        }
 
+        Integer availableQuantity = calculationService.getAvailableQuantity(inventory);
 
         if (isReservation) {
             if (availableQuantity == null || availableQuantity < quantity) {
@@ -63,9 +67,9 @@ public class ReservationServiceImpl implements ReservationService {
             inventory.setQuantity(inventory.getQuantity() - quantity);
             inventory.setQuantityReserved(inventory.getQuantityReserved() - quantity);
             log.info("{} units {} for product ID {}. New total: {}, Reserved: {}",
-                    quantity, productId, inventory.getQuantity(), inventory.getQuantityReserved(), "released");
+                    quantity, "released", productId,
+                    inventory.getQuantity(), inventory.getQuantityReserved());
         }
         inventoryService.saveInventory(inventory);
     }
-
 }

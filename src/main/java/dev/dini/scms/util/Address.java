@@ -1,4 +1,4 @@
-package dev.dini.scms.supplier.entity;
+package dev.dini.scms.util;
 
 import jakarta.persistence.Embeddable;
 import lombok.Data;
