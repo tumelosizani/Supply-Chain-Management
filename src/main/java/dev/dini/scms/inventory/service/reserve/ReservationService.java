@@ -1,4 +1,8 @@
-package dev.dini.scms.inventory.service;
+package dev.dini.scms.inventory.service.reserve;
+
+import dev.dini.scms.order.dto.CustomerOrderItemRequestDTO;
+
+import java.util.List;
 
 public interface ReservationService {
 
@@ -29,5 +33,7 @@ public interface ReservationService {
      * @param quantity the quantity to release
      */
     void releaseReservation(Long productId, int quantity);
+
+    void reserveInventoryBatch(List<CustomerOrderItemRequestDTO> items);
 
 }
