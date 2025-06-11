@@ -1,4 +1,4 @@
-package dev.dini.scms.inventory.service.availbitity;
+package dev.dini.scms.inventory.service.availability;
 
 import dev.dini.scms.order.dto.CustomerOrderItemRequestDTO;
 
