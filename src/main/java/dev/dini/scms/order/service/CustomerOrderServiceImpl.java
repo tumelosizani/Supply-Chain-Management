@@ -1,7 +1,7 @@
 package dev.dini.scms.order.service;
 
 import dev.dini.scms.inventory.service.*;
-import dev.dini.scms.inventory.service.availbitity.InventoryAvailabilityService;
+import dev.dini.scms.inventory.service.availability.InventoryAvailabilityService;
 import dev.dini.scms.inventory.service.reserve.ReservationService;
 import dev.dini.scms.order.dto.*;
 import dev.dini.scms.order.entity.*;
