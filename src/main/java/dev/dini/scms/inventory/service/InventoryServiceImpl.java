@@ -10,6 +10,7 @@ import dev.dini.scms.product.service.ProductService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -30,18 +31,18 @@ public class InventoryServiceImpl implements InventoryService {
     public InventoryResponseDTO createInventory(InventoryRequestDTO createDTO) {
         log.info("Creating inventory {}", createDTO);
 
-        if (inventoryUtil.existsByProductId(createDTO.productId())) {
-            throw new EntityAlreadyExistsException("Inventory already exists for product ID: " + createDTO.productId());
-        }
+        var inventory = inventoryMapper.toEntity(createDTO);
 
-        Inventory inventory = inventoryMapper.toEntity(createDTO);
-
-        // Fetch product details from the product service
         inventory.setProduct(productService.getEntityById(createDTO.productId()));
 
-        Inventory savedInventory = inventoryRepository.save(inventory);
-        log.info("Inventory created {}", savedInventory);
-        return inventoryMapper.toResponseDTO(savedInventory);
+        try{
+            Inventory savedInventory = inventoryRepository.save(inventory);
+            log.info("Inventory created {}", savedInventory);
+            return inventoryMapper.toResponseDTO(savedInventory);
+        } catch (DataIntegrityViolationException e) {
+            log.error("Error creating inventory: {}", e.getMessage());
+            throw new InventoryAlreadyExistsException("Inventory for product ID " + createDTO.productId() + " already exists.");
+        }
     }
 
     @Override
@@ -50,14 +51,14 @@ public class InventoryServiceImpl implements InventoryService {
         log.info("Updating inventory with id {}: {}", id, updateDTO);
 
         // Fetch the existing inventory item
-        Inventory inventory = findInventoryById(id);
+        var inventory = findInventoryById(id);
 
         if (updateDTO.productId() != null && !updateDTO.productId().equals(inventory.getProduct().getId())) {
             throw new IllegalArgumentException("Cannot change product of existing inventory item.");
         }
 
         inventoryMapper.updateEntity(updateDTO, inventory);
-        Inventory updatedInventory = inventoryRepository.save(inventory);
+        var updatedInventory = inventoryRepository.save(inventory);
         log.info("Inventory updated {}", updatedInventory);
         return inventoryMapper.toResponseDTO(updatedInventory);
     }
@@ -76,6 +77,7 @@ public class InventoryServiceImpl implements InventoryService {
                 .toList();
     }
 
+
     @Override
     @Transactional
     public void reduceInventoryQuantity(Long productId, int quantity) {
@@ -85,7 +87,7 @@ public class InventoryServiceImpl implements InventoryService {
          * Check if the product ID is valid and if the inventory exists.
          * If not, throw an InventoryNotFoundException.
          */
-        Inventory inventory = inventoryUtil.findInventoryByProductId(productId);
+        var inventory = inventoryUtil.findInventoryByProductId(productId);
 
         // Check if there are enough inventories
         if (inventory.getQuantity() < quantity) {
@@ -102,24 +104,34 @@ public class InventoryServiceImpl implements InventoryService {
     @Override
     @Transactional
     public void saveInventory(Inventory inventory) {
-        Inventory savedInventory = inventoryRepository.save(inventory);
+        var savedInventory = inventoryRepository.save(inventory);
         inventoryMapper.toResponseDTO(savedInventory);
     }
 
     @Override
     public boolean isInventoryAvailable(Long productId, int quantity) {
-        log.info("Checking inventory availability for product ID {} with quantity {}", productId, quantity);
+        log.info("Checking inventory availability for product ID {} with required quantity {}", productId, quantity);
         try {
-            Inventory inventory = inventoryUtil.findInventoryByProductId(productId);
+            var inventory = inventoryUtil.findInventoryByProductId(productId);
+
             Integer availableQuantity = calculationService.getAvailableQuantity(inventory);
+
+            // Corrected logic: isAvailable is true if requested quantity can be met
             boolean isAvailable = availableQuantity >= quantity;
-            log.info("Product ID {} has {} available in stock (total: {}, reserved: {}). Required: {}. Available: {}",
-                    productId, availableQuantity, inventory.getQuantity(),
-                    inventory.getQuantityReserved() != null ? inventory.getQuantityReserved() : 0, 
-                    quantity, isAvailable);
+
+            log.info("Product ID {} has {} available in stock (total: {}, reserved: {}). Required: {}. Is Available: {}",
+                    productId,
+                    availableQuantity,
+                    inventory.getQuantity(),
+                    inventory.getQuantityReserved() != null ? inventory.getQuantityReserved() : 0,
+                    quantity,
+                    isAvailable);
+
+            // RETURN THE ACTUAL BOOLEAN VALUE of isAvailable
             return !isAvailable;
+
         } catch (InventoryNotFoundException e) {
-            log.warn("Inventory not found for product ID: {}", productId);
+            log.warn("Inventory not found for product ID: {}. Returning false (not available).", productId);
             return true;
         }
     }
@@ -127,7 +139,7 @@ public class InventoryServiceImpl implements InventoryService {
     @Override
     public int getStockLevel(Long productId) {
         log.info("Getting stock level for product ID {}", productId);
-        Inventory inventory = inventoryUtil.findInventoryByProductId(productId);
+        var inventory = inventoryUtil.findInventoryByProductId(productId);
         int quantity = inventory.getQuantity();
         log.info("Quantity for product ID {} is {}", productId, quantity);
         return quantity;
@@ -139,13 +151,13 @@ public class InventoryServiceImpl implements InventoryService {
         log.info("Adding stock for product ID {} with quantity {}", request.productId(), request.quantity());
 
         // Check if the product ID is valid and if the inventory exists.
-        Inventory inventory = inventoryUtil.findInventoryByProductId(request.productId());
+        var inventory = inventoryUtil.findInventoryByProductId(request.productId());
 
         // Update the quantity
         inventory.setQuantity(inventory.getQuantity() + request.quantity());
 
 
-        Inventory savedInventory = inventoryRepository.save(inventory);
+        var savedInventory = inventoryRepository.save(inventory);
         log.info("Stock added for product ID {}. New quantity: {}", request.productId(), savedInventory.getQuantity());
         return inventoryMapper.toResponseDTO(savedInventory);
     }

@@ -32,8 +32,7 @@ The system is currently structured into the following modules:
 
 2.  **Getting the Code:**
     ```bash
-    git clone <your_github_repository_url>
-    cd <your_project_directory>
+    git clone https://github.com/tumelosizani/Supply-Chain-Management.git
     ```
 
 3.  **Building the Project:**
@@ -59,17 +58,7 @@ The system is currently structured into the following modules:
 
     The application should start, and you can typically access its API endpoints (if you have controllers implemented) at `http://localhost:8080` (or a different port configured in your `application.properties` or `application.yml` file).
 
-## API Endpoints (Example - Adjust based on your controllers)
 
-* `/api/products`: (POST - create, GET - list/search, GET/{id} - get by id, PUT/{id} - update, DELETE/{id} - delete)
-* `/api/products/summaries`: (GET - paginated and sorted product summaries)
-* `/api/inventories`: (POST - create, GET - list, GET/{id} - get by id, PUT/{id} - update, DELETE/{id} - delete)
-* `/api/orders`: (POST - create, GET/{id} - get by id, PUT/{id} - update, DELETE/{id} - delete, POST/{orderId}/items - add item, PUT/{orderId}/items/{itemId} - update item, DELETE/{orderId}/items/{itemId} - remove item, POST/{orderId}/confirm - confirm, POST/{orderId}/cancel - cancel)
-* `/api/purchase-orders`: (POST - create, GET/{id} - get by id, PUT/{id} - update, DELETE/{id} - delete)
-* `/api/shipments`: (POST - create, GET/{id} - get by id, PUT/{id} - update, DELETE/{id} - delete)
-* `/api/suppliers`: (POST - create, GET - list, GET/{id} - get by id, PUT/{id} - update, DELETE/{id} - delete)
-
-**Note:** These are example endpoints. Refer to your controller implementations for the actual API structure.
 
 ## Future Enhancements
 
