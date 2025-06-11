@@ -24,20 +24,7 @@ public interface CustomerOrderService {
 
     CustomerOrderResponseDTO removeItemFromOrder(Long orderId, Long itemId);
 
-    /**
-     * Checks if there is sufficient inventory for all items in the order.
-     *
-     * @param items the list of order items to check
-     * @return true if all items have sufficient inventory, false otherwise
-     */
-    boolean checkInventoryAvailability(List<CustomerOrderItemRequestDTO> items);
 
-    /**
-     * Reserves inventory for all items in the order by increasing the reserved quantities.
-     *
-     * @param items the list of order items to reserve inventory for
-     */
-    void reserveInventory(List<CustomerOrderItemRequestDTO> items);
 
     /**
      * Processes the order by checking inventory availability and reserving inventory.

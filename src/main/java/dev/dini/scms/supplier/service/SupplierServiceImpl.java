@@ -23,8 +23,8 @@ public class SupplierServiceImpl implements  SupplierService {
     @Override
     public SupplierResponseDTO createSupplier(SupplierRequestDTO createDTO) {
         log.info("Creating supplier, {}", createDTO);
-        Supplier supplier = mapper.toEntity(createDTO);
-        Supplier savedSupplier = supplierRepository.save(supplier);
+        var supplier = mapper.toEntity(createDTO);
+        var savedSupplier = supplierRepository.save(supplier);
         log.info("Supplier created {}", savedSupplier);
         return mapper.toResponseDTO(savedSupplier);
     }
@@ -32,22 +32,23 @@ public class SupplierServiceImpl implements  SupplierService {
     @Override
     public SupplierResponseDTO updateSupplier(Long id, SupplierRequestDTO updateDTO) {
         log.info("Updating supplier, {}", updateDTO);
-        Supplier supplier = findSupplierId(id);
+        var supplier = findSupplierId(id);
         mapper.partialUpdate(updateDTO, supplier);
-        Supplier updatedSupplier = supplierRepository.save(supplier);
+        var updatedSupplier = supplierRepository.save(supplier);
         log.info("Supplier updated {}", updatedSupplier);
         return mapper.toResponseDTO(updatedSupplier);
     }
 
     @Override
     public SupplierResponseDTO getSupplierById(Long id) {
-        Supplier supplier = findSupplierId(id);
+        var supplier = findSupplierId(id);
         return mapper.toResponseDTO(supplier);
     }
 
     @Override
     public void deleteSupplier(Long id) {
-        Supplier supplier = findSupplierId(id);
+        log.info("Deleting supplier with id {}", id);
+        var supplier = findSupplierId(id);
         supplierRepository.delete(supplier);
     }
 

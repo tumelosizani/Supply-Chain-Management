@@ -9,6 +9,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -28,10 +30,12 @@ public class CustomerOrder extends BaseEntity {
     @Embedded
     private Address shippingAddress;
 
-    @OneToMany(mappedBy = "customerOrder", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CustomerOrderItem> items;
+    private BigDecimal totalCost;
 
     @OneToMany(mappedBy = "customerOrder", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Shipment> shipments;
+    private List<CustomerOrderItem> items = new ArrayList<>();
+
+    @OneToMany(mappedBy = "customerOrder", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Shipment> shipments=  new ArrayList<>();
 
 }

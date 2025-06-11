@@ -4,6 +4,7 @@ import dev.dini.scms.order.entity.CustomerOrderStatus;
 import dev.dini.scms.util.dto.AddressDTO;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
@@ -12,5 +13,6 @@ public record CustomerOrderResponseDTO(
         Date orderDate,
         CustomerOrderStatus status,
         AddressDTO shippingAddress,
-        List<CustomerOrderItemResponseDTO> items
+        List<CustomerOrderItemResponseDTO> items,
+        BigDecimal totalCost
 ) implements Serializable { }

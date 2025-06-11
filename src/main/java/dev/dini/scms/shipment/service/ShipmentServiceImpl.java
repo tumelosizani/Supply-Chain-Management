@@ -27,12 +27,11 @@ public class ShipmentServiceImpl implements ShipmentService {
     @Transactional
     public ShipmentResponseDTO createShipment(ShipmentRequestDTO createDTO) {
         log.info("Creating shipment {}", createDTO);
-        Shipment shipment = shipmentMapper.toEntity(createDTO);
+        var shipment = shipmentMapper.toEntity(createDTO);
 
-        // Fetch the customer order entity to set it in the shipment
         shipment.setCustomerOrder(customerOrderService.getEntityById(createDTO.orderId()));
 
-        Shipment savedShipment = shipmentRepository.save(shipment);
+        var savedShipment = shipmentRepository.save(shipment);
         log.info("Shipment created {}", savedShipment);
         return shipmentMapper.toResponseDTO(savedShipment);
     }
@@ -43,7 +42,7 @@ public class ShipmentServiceImpl implements ShipmentService {
         log.info("Updating shipment with id {}: {}", id, updateDTO);
 
         // Fetch the existing shipment
-        Shipment shipment = findShipmentById(id);
+        var shipment = findShipmentById(id);
 
         shipmentMapper.partialUpdate(updateDTO, shipment);
         Shipment updatedShipment = shipmentRepository.save(shipment);
@@ -53,13 +52,13 @@ public class ShipmentServiceImpl implements ShipmentService {
 
     @Override
     public void deleteShipment(Long id) {
-        Shipment shipment = findShipmentById(id);
+        var shipment = findShipmentById(id);
         shipmentRepository.delete(shipment);
     }
 
     @Override
     public ShipmentResponseDTO getShipment(Long id) {
-        Shipment shipment = shipmentRepository.findById(id)
+        var shipment = shipmentRepository.findById(id)
                 .orElseThrow(() -> new ShipmentNotFoundException(id));
         return shipmentMapper.toResponseDTO(shipment);
     }

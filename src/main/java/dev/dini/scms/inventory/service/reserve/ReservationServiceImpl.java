@@ -1,12 +1,19 @@
-package dev.dini.scms.inventory.service;
+package dev.dini.scms.inventory.service.reserve;
 
 import dev.dini.scms.inventory.entity.Inventory;
+import dev.dini.scms.inventory.service.InventoryCalculationService;
+import dev.dini.scms.inventory.service.InventoryService;
+import dev.dini.scms.order.dto.CustomerOrderItemRequestDTO;
 import dev.dini.scms.util.InventoryUtil;
 import dev.dini.scms.util.exception.InsufficientInventoryException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import jakarta.transaction.Transactional;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -38,13 +45,46 @@ public class ReservationServiceImpl implements ReservationService {
         updateReservation(productId, quantity, false);
     }
 
+    @Override
+    @Transactional
+    public void reserveInventoryBatch(List<CustomerOrderItemRequestDTO> items) {
+        log.info("Reserving inventory for {} items in batch", items.size());
+
+        for (CustomerOrderItemRequestDTO item : items) {
+            if (item.productId() == null || item.quantity() <= 0) {
+                throw new IllegalArgumentException(
+                        "Invalid item: Product ID and quantity must be set and positive. Found: Product ID = "
+                                + item.productId() + ", Quantity = " + item.quantity()
+                );
+            }
+        }
+
+        // Group items by productId in case duplicates exist
+        Map<Long, Integer> productIdToQuantityMap = new HashMap<>();
+        for (var item : items) {
+            productIdToQuantityMap.merge(item.productId(), item.quantity(), Integer::sum);
+        }
+
+        for (Map.Entry<Long, Integer> entry : productIdToQuantityMap.entrySet()) {
+            Long productId = entry.getKey();
+            int totalQuantity = entry.getValue();
+
+            // Use existing reservation logic
+            reserveInventory(productId, totalQuantity);
+            log.info("Reserved {} units of product ID: {}", totalQuantity, productId);
+        }
+
+        log.info("Batch inventory reservation completed");
+    }
+
+
     private void updateReservation(Long productId, int quantity, boolean isReservation) {
 
         /*
          * Check if the product ID is valid and if the inventory exists.
          * If not, throw an InventoryNotFoundException.
          */
-        Inventory inventory = inventoryUtil.findInventoryByProductId(productId);
+        var inventory = inventoryUtil.findInventoryByProductId(productId);
 
         // Initialize quantityReserved to 0 if it's null
         if (inventory.getQuantityReserved() == null) {

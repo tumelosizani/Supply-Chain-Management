@@ -30,7 +30,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     public PurchaseOrderResponseDTO createPurchaseOrder(PurchaseOrderRequestDTO createDTO) {
         log.info("Creating purchase order from DTO: {}", createDTO);
 
-        PurchaseOrder order = purchaseOrderMapper.toEntity(createDTO);
+        var order = purchaseOrderMapper.toEntity(createDTO);
         order.setStatus(PurchaseOrderStatus.PENDING);
 
         // Fetch supplier directly from the supplier service
@@ -39,7 +39,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         List<PurchaseOrderItem> orderItems = createOrderItemsFromDTOs(createDTO.items(), order);
         order.setItems(orderItems);
 
-        PurchaseOrder savedPurchaseOrder = purchaseOrderRepository.save(order);
+        var savedPurchaseOrder = purchaseOrderRepository.save(order);
 
         // Calculate and log total amount
         BigDecimal totalAmount = calculationService.calculateOrderTotalAmount(savedPurchaseOrder);
@@ -64,9 +64,9 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         log.info("Updating purchase order with ID: {}", id);
 
         // Fetch the existing purchase order
-        PurchaseOrder purchaseOrder = findPurchaseOrderById(id);
+        var purchaseOrder = findPurchaseOrderById(id);
         purchaseOrderMapper.partialUpdate(updateDTO, purchaseOrder);
-        PurchaseOrder updatedPurchaseOrder = purchaseOrderRepository.save(purchaseOrder);
+        var updatedPurchaseOrder = purchaseOrderRepository.save(purchaseOrder);
 
         BigDecimal totalAmount = calculationService.calculateOrderTotalAmount(updatedPurchaseOrder);
         log.info("Purchase order updated with ID {}. Total amount: {}", updatedPurchaseOrder.getId(), totalAmount);
@@ -84,7 +84,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     @Override
     public PurchaseOrderResponseDTO getPurchaseOrderById(Long id) {
         log.info("Fetching purchase order with ID: {}", id);
-        PurchaseOrder purchaseOrder = findPurchaseOrderById(id);
+        var purchaseOrder = findPurchaseOrderById(id);
         log.info("Purchase order found with ID: {}", id);
         return purchaseOrderMapper.toResponseDTO(purchaseOrder);
     }
@@ -104,9 +104,9 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         log.info("Updating purchase order status with ID: {} to {}", id, status);
 
         // Fetch the existing purchase order
-        PurchaseOrder purchaseOrder = findPurchaseOrderById(id);
+        var purchaseOrder = findPurchaseOrderById(id);
         purchaseOrder.setStatus(status);
-        PurchaseOrder updatedPurchaseOrder = purchaseOrderRepository.save(purchaseOrder);
+        var updatedPurchaseOrder = purchaseOrderRepository.save(purchaseOrder);
 
         log.info("Purchase order status updated with ID {}. New status: {}", updatedPurchaseOrder.getId(), status);
         return purchaseOrderMapper.toResponseDTO(updatedPurchaseOrder);

@@ -27,8 +27,8 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     public ProductResponseDTO createProduct(ProductRequestDTO createDTO) {
         log.info("Creating product {}", createDTO);
-        Product product = productMapper.toEntity(createDTO);
-        Product savedProduct = productRepository.save(product);
+        var product = productMapper.toEntity(createDTO);
+        var savedProduct = productRepository.save(product);
         log.info("Product created {}", savedProduct);
         return productMapper.toResponseDTO(savedProduct);
     }
@@ -38,11 +38,9 @@ public class ProductServiceImpl implements ProductService {
     public ProductResponseDTO updateProduct(Long id, ProductRequestDTO updateDTO) {
         log.info("Updating product with id {}: {}", id, updateDTO);
 
-        // Fetch the existing product
-        Product product = findProductById(id);
-
+        var product = findProductById(id);
         productMapper.partialUpdate(updateDTO, product);
-        Product updatedProduct = productRepository.save(product);
+        var updatedProduct = productRepository.save(product);
         log.info("Product updated {}", updatedProduct);
         return productMapper.toResponseDTO(updatedProduct);
     }
@@ -56,8 +54,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductResponseDTO getProductById(Long id) {
         log.info("Fetching product with id {}", id);
-        // Fetch the product
-        Product product = findProductById(id);
+        var product = findProductById(id);
         return productMapper.toResponseDTO(product);
     }
 
