@@ -33,6 +33,7 @@ public interface InventoryService {
      * @param quantity the quantity to reduce
      * @deprecated Use reserveInventory and confirmReservation instead
      */
+    @Deprecated
     void reduceInventoryQuantity(Long productId, int quantity);
 
     

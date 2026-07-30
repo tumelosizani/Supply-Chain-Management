@@ -16,12 +16,14 @@ public interface InventoryMapper {
     @Mapping(target = "product", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "quantityReserved", ignore = true)
     Inventory toEntity(InventoryRequestDTO inventoryRequestDTO);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "product", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "quantityReserved", ignore = true)
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateEntity(InventoryRequestDTO inventoryRequestDTO, @MappingTarget Inventory inventory);
 
