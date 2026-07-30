@@ -127,12 +127,12 @@ public class InventoryServiceImpl implements InventoryService {
                     quantity,
                     isAvailable);
 
-            // RETURN THE ACTUAL BOOLEAN VALUE of isAvailable
-            return !isAvailable;
+            // Honor the contract: true means the requested quantity CAN be met.
+            return isAvailable;
 
         } catch (InventoryNotFoundException e) {
             log.warn("Inventory not found for product ID: {}. Returning false (not available).", productId);
-            return true;
+            return false;
         }
     }
 
