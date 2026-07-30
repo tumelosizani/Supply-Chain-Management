@@ -12,12 +12,15 @@ public class InventoryCalculationService {
         Objects.requireNonNull(inventory, "Inventory cannot be null");
         Integer quantity = inventory.getQuantity();
         Integer reserved = inventory.getQuantityReserved();
-        
-        // Handle case where quantityReserved is null
+
+        // Treat missing physical quantity or reservation as zero rather than NPE-ing.
+        if (quantity == null) {
+            quantity = 0;
+        }
         if (reserved == null) {
             reserved = 0;
         }
-        
+
         return quantity - reserved;
     }
 }

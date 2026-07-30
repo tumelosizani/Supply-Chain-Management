@@ -162,7 +162,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
             throw new IllegalArgumentException("Item quantity must be positive.");
         }
 
-        if (inventoryService.isInventoryAvailable(itemRequestDTO.productId(), itemRequestDTO.quantity())) {
+        if (!inventoryService.isInventoryAvailable(itemRequestDTO.productId(), itemRequestDTO.quantity())) {
             throw new InsufficientInventoryException("Insufficient inventory for product ID: " + itemRequestDTO.productId() + ", requested quantity: " + itemRequestDTO.quantity());
         }
 
@@ -212,7 +212,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         // Check for sufficient inventory if quantity is increasing
         // Using your `inventoryService.isInventoryAvailable` method with corrected logic
         if (quantityDifference > 0) {
-            if (inventoryService.isInventoryAvailable(itemToUpdate.getProduct().getId(), quantityDifference)) {
+            if (!inventoryService.isInventoryAvailable(itemToUpdate.getProduct().getId(), quantityDifference)) {
                 throw new InsufficientInventoryException("Insufficient inventory to increase order item quantity for product ID: " + itemToUpdate.getProduct().getId() + ", quantity needed: " + quantityDifference);
             }
         }
