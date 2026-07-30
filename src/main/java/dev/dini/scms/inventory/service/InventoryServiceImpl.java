@@ -79,6 +79,7 @@ public class InventoryServiceImpl implements InventoryService {
 
 
     @Override
+    @Deprecated
     @Transactional
     public void reduceInventoryQuantity(Long productId, int quantity) {
         log.info("Reducing inventory for product ID {} by quantity {}", productId, quantity);
