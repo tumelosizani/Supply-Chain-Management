@@ -12,6 +12,10 @@ public interface PaymentMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "paymentDate", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "transactionReference", ignore = true)
+    @Mapping(target = "customerOrder", ignore = true)
     Payment toEntity(PaymentRequestDTO paymentRequestDTO);
 
 
