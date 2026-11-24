@@ -1,5 +1,6 @@
 package dev.dini.scms.order.service;
 
+import dev.dini.scms.inventory.dto.InventoryReservationItemDTO;
 import dev.dini.scms.inventory.service.*;
 import dev.dini.scms.inventory.service.availability.InventoryAvailabilityService;
 import dev.dini.scms.inventory.service.reserve.ReservationService;
@@ -43,7 +44,10 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         log.info("Creating customer order: {}", createDTO);
 
         customerOrderValidator.validateItems(createDTO.items());
-        inventoryAvailabilityService.ensureSufficientInventory(createDTO.items());
+        List<InventoryReservationItemDTO> reservationItems = createDTO.items().stream()
+                .map(item -> new InventoryReservationItemDTO(item.productId(), item.quantity()))
+                .toList();
+        inventoryAvailabilityService.ensureSufficientInventory(reservationItems);
 
         var order = customerOrderMapper.toEntity(createDTO);
         order.setOrderDate(LocalDateTime.now());
@@ -57,7 +61,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         orderCalculationService.calculateTotalCost(savedOrder);
         savedOrder = repository.save(savedOrder);
 
-        reservationService.reserveInventoryBatch(createDTO.items());
+        reservationService.reserveInventoryBatch(reservationItems);
 
         log.info("Customer order created: {}", savedOrder);
         return customerOrderMapper.toResponseDTO(savedOrder);
