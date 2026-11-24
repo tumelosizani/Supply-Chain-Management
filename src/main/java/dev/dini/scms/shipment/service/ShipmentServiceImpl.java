@@ -162,7 +162,13 @@ public class ShipmentServiceImpl implements ShipmentService {
         shipment.setDeliveredAt(LocalDateTime.now());
 
         Shipment saved = shipmentRepository.save(shipment);
-        customerOrderService.markDelivered(saved.getCustomerOrder().getId());
+        Long orderId = saved.getCustomerOrder().getId();
+        boolean allNonReturnedDelivered = shipmentRepository.findByCustomerOrderId(orderId).stream()
+                .filter(s -> s.getStatus() != ShipmentStatus.RETURNED)
+                .allMatch(s -> s.getStatus() == ShipmentStatus.DELIVERED);
+        if (allNonReturnedDelivered) {
+            customerOrderService.markDelivered(orderId);
+        }
         log.info("Shipment ID {} marked as DELIVERED", id);
         return shipmentMapper.toResponseDTO(saved);
     }

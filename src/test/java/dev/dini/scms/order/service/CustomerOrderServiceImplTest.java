@@ -125,6 +125,22 @@ class CustomerOrderServiceImplTest {
     }
 
     @Test
+    @DisplayName("markShipped is idempotent when order is already SHIPPED")
+    void markShipped_isIdempotentWhenAlreadyShipped() {
+        order.setStatus(CustomerOrderStatus.SHIPPED);
+        when(repository.findById(42L)).thenReturn(Optional.of(order));
+        CustomerOrderResponseDTO dto = new CustomerOrderResponseDTO(
+                42L, LocalDateTime.now(), CustomerOrderStatus.SHIPPED, null, List.of(), BigDecimal.TEN
+        );
+        when(customerOrderMapper.toResponseDTO(order)).thenReturn(dto);
+
+        CustomerOrderResponseDTO result = orderService.markShipped(42L);
+
+        assertThat(result.status()).isEqualTo(CustomerOrderStatus.SHIPPED);
+        verify(repository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("markDelivered transitions SHIPPED -> DELIVERED")
     void markDelivered_transitionsShippedToDelivered() {
         order.setStatus(CustomerOrderStatus.SHIPPED);

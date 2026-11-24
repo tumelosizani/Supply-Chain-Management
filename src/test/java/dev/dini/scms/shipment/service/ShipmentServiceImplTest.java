@@ -124,11 +124,12 @@ class ShipmentServiceImplTest {
     }
 
     @Test
-    @DisplayName("deliverShipment transitions SHIPPED -> DELIVERED, sets timestamp, and marks order DELIVERED")
+    @DisplayName("deliverShipment transitions SHIPPED -> DELIVERED, sets timestamp, and marks order DELIVERED when all non-returned shipments are delivered")
     void deliverShipment_transitionsAndSyncsOrder() {
         pendingShipment.setStatus(ShipmentStatus.SHIPPED);
         when(shipmentRepository.findById(7L)).thenReturn(Optional.of(pendingShipment));
         when(shipmentRepository.save(any(Shipment.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(shipmentRepository.findByCustomerOrderId(42L)).thenReturn(java.util.List.of(pendingShipment));
         ShipmentResponseDTO expectedDto = new ShipmentResponseDTO(
                 7L, 42L, "TRK-123", "DHL", ShipmentStatus.DELIVERED, LocalDateTime.now(), LocalDateTime.now()
         );
@@ -140,6 +141,29 @@ class ShipmentServiceImplTest {
         assertThat(pendingShipment.getStatus()).isEqualTo(ShipmentStatus.DELIVERED);
         assertThat(pendingShipment.getDeliveredAt()).isNotNull();
         verify(customerOrderService).markDelivered(42L);
+    }
+
+    @Test
+    @DisplayName("deliverShipment does not mark order DELIVERED while another non-returned shipment is still pending")
+    void deliverShipment_waitsForRemainingShipments() {
+        pendingShipment.setStatus(ShipmentStatus.SHIPPED);
+        Shipment secondShipment = new Shipment();
+        secondShipment.setId(8L);
+        secondShipment.setCustomerOrder(confirmedOrder);
+        secondShipment.setStatus(ShipmentStatus.PENDING);
+
+        when(shipmentRepository.findById(7L)).thenReturn(Optional.of(pendingShipment));
+        when(shipmentRepository.save(any(Shipment.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(shipmentRepository.findByCustomerOrderId(42L)).thenReturn(java.util.List.of(pendingShipment, secondShipment));
+        ShipmentResponseDTO expectedDto = new ShipmentResponseDTO(
+                7L, 42L, "TRK-123", "DHL", ShipmentStatus.DELIVERED, LocalDateTime.now(), LocalDateTime.now()
+        );
+        when(shipmentMapper.toResponseDTO(any(Shipment.class))).thenReturn(expectedDto);
+
+        shipmentService.deliverShipment(7L);
+
+        assertThat(pendingShipment.getStatus()).isEqualTo(ShipmentStatus.DELIVERED);
+        verify(customerOrderService, never()).markDelivered(42L);
     }
 
     @Test

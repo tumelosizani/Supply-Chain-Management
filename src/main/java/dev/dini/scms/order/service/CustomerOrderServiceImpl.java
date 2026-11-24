@@ -362,6 +362,9 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
             CustomerOrderStatus targetStatus
     ) {
         var order = findCustomerOrderById(orderId);
+        if (order.getStatus() == targetStatus) {
+            return customerOrderMapper.toResponseDTO(order);
+        }
         if (order.getStatus() != expectedCurrentStatus) {
             throw new IllegalStateException(
                     "Order " + orderId + " cannot transition to " + targetStatus
