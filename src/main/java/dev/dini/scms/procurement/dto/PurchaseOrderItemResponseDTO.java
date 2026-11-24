@@ -7,6 +7,7 @@ public record PurchaseOrderItemResponseDTO(
         Long id,
         Long productId,
         int quantity,
+        int quantityReceived,
         BigDecimal unitPrice,
         Long purchaseOrderId
 ) implements Serializable { }
