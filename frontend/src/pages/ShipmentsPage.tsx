@@ -47,6 +47,7 @@ export function ShipmentsPage() {
   const [trackingNumber, setTrackingNumber] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
+  const [busyIds, setBusyIds] = useState<Set<number>>(() => new Set());
 
   const loadShipments = useCallback(async () => {
     setLoading(true);
@@ -116,7 +117,9 @@ export function ShipmentsPage() {
   }
 
   async function handleDeliver(shipmentId: number) {
+    if (busyIds.has(shipmentId)) return;
     setError(null);
+    setBusyIds((prev) => new Set(prev).add(shipmentId));
     try {
       await apiRequest<ShipmentResponseDTO>(`/shipments/${shipmentId}/deliver`, {
         method: 'POST',
@@ -124,6 +127,12 @@ export function ShipmentsPage() {
       await loadShipments();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to mark shipment as delivered');
+    } finally {
+      setBusyIds((prev) => {
+        const next = new Set(prev);
+        next.delete(shipmentId);
+        return next;
+      });
     }
   }
 
@@ -177,7 +186,8 @@ export function ShipmentsPage() {
           {shipment.status === 'SHIPPED' && (
             <button
               onClick={() => handleDeliver(shipment.id)}
-              className="inline-flex items-center gap-1 rounded-md bg-teal-50 px-2.5 py-1 text-xs font-medium text-teal-700 hover:bg-teal-100"
+              disabled={busyIds.has(shipment.id)}
+              className="inline-flex items-center gap-1 rounded-md bg-teal-50 px-2.5 py-1 text-xs font-medium text-teal-700 hover:bg-teal-100 disabled:opacity-50"
             >
               <CheckCircle2 className="h-3.5 w-3.5" />
               Mark Delivered

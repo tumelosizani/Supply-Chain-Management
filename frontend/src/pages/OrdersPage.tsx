@@ -9,6 +9,7 @@ export function OrdersPage() {
   const [orders, setOrders] = useState<CustomerOrderResponseDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [busyIds, setBusyIds] = useState<Set<number>>(() => new Set());
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
@@ -28,12 +29,20 @@ export function OrdersPage() {
   }, [loadOrders]);
 
   async function handleAction(orderId: number, action: 'process' | 'confirm' | 'cancel') {
+    if (busyIds.has(orderId)) return;
     setError(null);
+    setBusyIds((prev) => new Set(prev).add(orderId));
     try {
       await apiRequest(`/customer-orders/${orderId}/${action}`, { method: 'POST' });
       await loadOrders();
     } catch (err) {
       setError(err instanceof Error ? err.message : `Failed to ${action} order`);
+    } finally {
+      setBusyIds((prev) => {
+        const next = new Set(prev);
+        next.delete(orderId);
+        return next;
+      });
     }
   }
 
@@ -57,6 +66,7 @@ export function OrdersPage() {
       );
     }
     return orders.map((order) => {
+      const isBusy = busyIds.has(order.id);
       const canProcess = order.status === 'PENDING';
       const canConfirm = order.status === 'PROCESSING';
       const canCancel = order.status === 'PENDING' || order.status === 'PROCESSING';
@@ -79,7 +89,8 @@ export function OrdersPage() {
               {canProcess && (
                 <button
                   onClick={() => handleAction(order.id, 'process')}
-                  className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                  disabled={isBusy}
+                  className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
                 >
                   <Play className="h-3.5 w-3.5" />
                   Process
@@ -88,7 +99,8 @@ export function OrdersPage() {
               {canConfirm && (
                 <button
                   onClick={() => handleAction(order.id, 'confirm')}
-                  className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
+                  disabled={isBusy}
+                  className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
                 >
                   <Check className="h-3.5 w-3.5" />
                   Confirm
@@ -97,7 +109,8 @@ export function OrdersPage() {
               {canCancel && (
                 <button
                   onClick={() => handleAction(order.id, 'cancel')}
-                  className="inline-flex items-center gap-1 rounded-md bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700 hover:bg-rose-100"
+                  disabled={isBusy}
+                  className="inline-flex items-center gap-1 rounded-md bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700 hover:bg-rose-100 disabled:opacity-50"
                 >
                   <X className="h-3.5 w-3.5" />
                   Cancel
