@@ -1,6 +1,8 @@
 package dev.dini.scms.shipment.controller;
 
-import dev.dini.scms.shipment.dto.*;
+import dev.dini.scms.shipment.dto.ShipmentDispatchRequestDTO;
+import dev.dini.scms.shipment.dto.ShipmentRequestDTO;
+import dev.dini.scms.shipment.dto.ShipmentResponseDTO;
 import dev.dini.scms.shipment.service.ShipmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -41,12 +43,29 @@ public class ShipmentController {
         return ResponseEntity.ok(response);
     }
 
-
     @GetMapping
     public ResponseEntity<List<ShipmentResponseDTO>> getAllShipments() {
         List<ShipmentResponseDTO> response = shipmentService.getAllShipments();
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/order/{orderId}")
+    public ResponseEntity<List<ShipmentResponseDTO>> getShipmentsByOrder(@PathVariable Long orderId) {
+        List<ShipmentResponseDTO> response = shipmentService.getShipmentsByOrderId(orderId);
+        return ResponseEntity.ok(response);
+    }
 
+    @PostMapping("/{id}/ship")
+    public ResponseEntity<ShipmentResponseDTO> shipShipment(
+            @PathVariable Long id,
+            @Valid @RequestBody ShipmentDispatchRequestDTO dispatchDTO) {
+        ShipmentResponseDTO response = shipmentService.shipShipment(id, dispatchDTO);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{id}/deliver")
+    public ResponseEntity<ShipmentResponseDTO> deliverShipment(@PathVariable Long id) {
+        ShipmentResponseDTO response = shipmentService.deliverShipment(id);
+        return ResponseEntity.ok(response);
+    }
 }
