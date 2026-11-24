@@ -5,6 +5,7 @@ import { InventoryPage } from './pages/InventoryPage';
 import { OrdersPage } from './pages/OrdersPage';
 import { ProcurementPage } from './pages/ProcurementPage';
 import { ProductsPage } from './pages/ProductsPage';
+import { ShipmentsPage } from './pages/ShipmentsPage';
 import { SuppliersPage } from './pages/SuppliersPage';
 
 export function App() {
@@ -16,6 +17,7 @@ export function App() {
           <Route path="/products" element={<ProductsPage />} />
           <Route path="/inventory" element={<InventoryPage />} />
           <Route path="/orders" element={<OrdersPage />} />
+          <Route path="/shipments" element={<ShipmentsPage />} />
           <Route path="/procurement" element={<ProcurementPage />} />
           <Route path="/suppliers" element={<SuppliersPage />} />
         </Route>

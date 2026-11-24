@@ -1,4 +1,4 @@
-import { AlertCircle, Boxes, ClipboardList, Package, ShoppingCart, Truck } from 'lucide-react';
+import { AlertCircle, Boxes, ClipboardList, Package, PackageCheck, ShoppingCart, Truck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiRequest } from '../api/client';
@@ -8,6 +8,7 @@ import type {
   PageResponse,
   ProductSummaryDTO,
   PurchaseOrderResponseDTO,
+  ShipmentResponseDTO,
   SupplierResponseDTO,
 } from '../types/scms';
 
@@ -15,6 +16,7 @@ interface Stats {
   products: number;
   inventoryItems: number;
   customerOrders: number;
+  shipments: number;
   purchaseOrders: number;
   suppliers: number;
 }
@@ -28,10 +30,11 @@ export function DashboardPage() {
     let active = true;
     async function load() {
       try {
-        const [products, inventory, orders, pos, suppliers] = await Promise.all([
+        const [products, inventory, orders, shipments, pos, suppliers] = await Promise.all([
           apiRequest<PageResponse<ProductSummaryDTO>>('/products/summaries?page=0&size=1'),
           apiRequest<InventorySummaryDTO[]>('/inventory/summaries'),
           apiRequest<CustomerOrderResponseDTO[]>('/customer-orders'),
+          apiRequest<ShipmentResponseDTO[]>('/shipments'),
           apiRequest<PurchaseOrderResponseDTO[]>('/purchase-orders'),
           apiRequest<SupplierResponseDTO[]>('/suppliers'),
         ]);
@@ -40,6 +43,7 @@ export function DashboardPage() {
           products: products.totalElements,
           inventoryItems: inventory.length,
           customerOrders: orders.length,
+          shipments: shipments.length,
           purchaseOrders: pos.length,
           suppliers: suppliers.length,
         });
@@ -60,6 +64,7 @@ export function DashboardPage() {
     { label: 'Products', value: stats?.products ?? '—', to: '/products', icon: Package },
     { label: 'Inventory Records', value: stats?.inventoryItems ?? '—', to: '/inventory', icon: Boxes },
     { label: 'Customer Orders', value: stats?.customerOrders ?? '—', to: '/orders', icon: ShoppingCart },
+    { label: 'Shipments', value: stats?.shipments ?? '—', to: '/shipments', icon: PackageCheck },
     { label: 'Purchase Orders', value: stats?.purchaseOrders ?? '—', to: '/procurement', icon: ClipboardList },
     { label: 'Suppliers', value: stats?.suppliers ?? '—', to: '/suppliers', icon: Truck },
   ];

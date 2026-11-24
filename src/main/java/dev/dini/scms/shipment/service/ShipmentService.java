@@ -1,5 +1,6 @@
 package dev.dini.scms.shipment.service;
 
+import dev.dini.scms.shipment.dto.ShipmentDispatchRequestDTO;
 import dev.dini.scms.shipment.dto.ShipmentRequestDTO;
 import dev.dini.scms.shipment.dto.ShipmentResponseDTO;
 
@@ -15,4 +16,10 @@ public interface ShipmentService {
     ShipmentResponseDTO getShipment(Long id);
 
     List<ShipmentResponseDTO> getAllShipments();
+
+    List<ShipmentResponseDTO> getShipmentsByOrderId(Long orderId);
+
+    ShipmentResponseDTO shipShipment(Long id, ShipmentDispatchRequestDTO dispatchDTO);
+
+    ShipmentResponseDTO deliverShipment(Long id);
 }

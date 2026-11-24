@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -26,5 +28,16 @@ public class Shipment extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     private ShipmentStatus status;
+
+    private LocalDateTime shippedAt;
+
+    private LocalDateTime deliveredAt;
+
+    public Shipment(CustomerOrder customerOrder, String trackingNumber, String carrier, ShipmentStatus status) {
+        this.customerOrder = customerOrder;
+        this.trackingNumber = trackingNumber;
+        this.carrier = carrier;
+        this.status = status;
+    }
 
 }

@@ -331,11 +331,19 @@ public class DataSeeder implements ApplicationRunner {
             if (shipmentStatus == null) {
                 continue;
             }
+            LocalDateTime shippedAt = (shipmentStatus == ShipmentStatus.SHIPPED || shipmentStatus == ShipmentStatus.DELIVERED)
+                    ? order.getOrderDate().plusDays(1)
+                    : null;
+            LocalDateTime deliveredAt = shipmentStatus == ShipmentStatus.DELIVERED
+                    ? order.getOrderDate().plusDays(3)
+                    : null;
             shipments.add(new Shipment(
                     order,
                     "TRK-ZA-" + (seq++),
                     CARRIERS[rng.nextInt(CARRIERS.length)],
-                    shipmentStatus
+                    shipmentStatus,
+                    shippedAt,
+                    deliveredAt
             ));
         }
         return shipments;

@@ -1,5 +1,6 @@
-import { Check, X } from 'lucide-react';
+import { Check, PackageCheck, Play, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { apiRequest } from '../api/client';
 import { StatusBadge } from '../components/StatusBadge';
 import type { CustomerOrderResponseDTO } from '../types/scms';
@@ -8,6 +9,7 @@ export function OrdersPage() {
   const [orders, setOrders] = useState<CustomerOrderResponseDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [busyIds, setBusyIds] = useState<Set<number>>(() => new Set());
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
@@ -26,13 +28,21 @@ export function OrdersPage() {
     void loadOrders();
   }, [loadOrders]);
 
-  async function handleAction(orderId: number, action: 'confirm' | 'cancel') {
+  async function handleAction(orderId: number, action: 'process' | 'confirm' | 'cancel') {
+    if (busyIds.has(orderId)) return;
     setError(null);
+    setBusyIds((prev) => new Set(prev).add(orderId));
     try {
       await apiRequest(`/customer-orders/${orderId}/${action}`, { method: 'POST' });
       await loadOrders();
     } catch (err) {
       setError(err instanceof Error ? err.message : `Failed to ${action} order`);
+    } finally {
+      setBusyIds((prev) => {
+        const next = new Set(prev);
+        next.delete(orderId);
+        return next;
+      });
     }
   }
 
@@ -56,8 +66,14 @@ export function OrdersPage() {
       );
     }
     return orders.map((order) => {
+      const isBusy = busyIds.has(order.id);
+      const canProcess = order.status === 'PENDING';
       const canConfirm = order.status === 'PROCESSING';
       const canCancel = order.status === 'PENDING' || order.status === 'PROCESSING';
+      const hasFulfillment =
+        order.status === 'CONFIRMED' ||
+        order.status === 'SHIPPED' ||
+        order.status === 'DELIVERED';
       return (
         <tr key={order.id} className="hover:bg-slate-50">
           <td className="px-4 py-3 font-mono text-xs text-slate-600">#{order.id}</td>
@@ -69,28 +85,47 @@ export function OrdersPage() {
             ${Number(order.totalCost ?? 0).toFixed(2)}
           </td>
           <td className="px-4 py-3 text-right">
-            {(canConfirm || canCancel) && (
-              <div className="inline-flex gap-2">
-                {canConfirm && (
-                  <button
-                    onClick={() => handleAction(order.id, 'confirm')}
-                    className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
-                  >
-                    <Check className="h-3.5 w-3.5" />
-                    Confirm
-                  </button>
-                )}
-                {canCancel && (
-                  <button
-                    onClick={() => handleAction(order.id, 'cancel')}
-                    className="inline-flex items-center gap-1 rounded-md bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700 hover:bg-rose-100"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                    Cancel
-                  </button>
-                )}
-              </div>
-            )}
+            <div className="inline-flex items-center gap-2">
+              {canProcess && (
+                <button
+                  onClick={() => handleAction(order.id, 'process')}
+                  disabled={isBusy}
+                  className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
+                >
+                  <Play className="h-3.5 w-3.5" />
+                  Process
+                </button>
+              )}
+              {canConfirm && (
+                <button
+                  onClick={() => handleAction(order.id, 'confirm')}
+                  disabled={isBusy}
+                  className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
+                >
+                  <Check className="h-3.5 w-3.5" />
+                  Confirm
+                </button>
+              )}
+              {canCancel && (
+                <button
+                  onClick={() => handleAction(order.id, 'cancel')}
+                  disabled={isBusy}
+                  className="inline-flex items-center gap-1 rounded-md bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700 hover:bg-rose-100 disabled:opacity-50"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Cancel
+                </button>
+              )}
+              {hasFulfillment && (
+                <Link
+                  to={`/shipments?orderId=${order.id}`}
+                  className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-200"
+                >
+                  <PackageCheck className="h-3.5 w-3.5" />
+                  Shipments
+                </Link>
+              )}
+            </div>
           </td>
         </tr>
       );

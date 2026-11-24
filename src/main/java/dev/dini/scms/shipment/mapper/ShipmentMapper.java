@@ -10,6 +10,8 @@ public interface ShipmentMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "customerOrder", ignore = true)
+    @Mapping(target = "shippedAt", ignore = true)
+    @Mapping(target = "deliveredAt", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     Shipment toEntity(ShipmentRequestDTO requestDTO);
@@ -19,6 +21,8 @@ public interface ShipmentMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "customerOrder", ignore = true)
+    @Mapping(target = "shippedAt", ignore = true)
+    @Mapping(target = "deliveredAt", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)

@@ -3,6 +3,7 @@ import {
   ClipboardList,
   LayoutDashboard,
   Package,
+  PackageCheck,
   ShoppingCart,
   Truck,
 } from 'lucide-react';
@@ -13,6 +14,7 @@ const NAV_ITEMS = [
   { to: '/products', label: 'Products', icon: Package },
   { to: '/inventory', label: 'Inventory', icon: Boxes },
   { to: '/orders', label: 'Customer Orders', icon: ShoppingCart },
+  { to: '/shipments', label: 'Shipments', icon: PackageCheck },
   { to: '/procurement', label: 'Procurement', icon: ClipboardList },
   { to: '/suppliers', label: 'Suppliers', icon: Truck },
 ];

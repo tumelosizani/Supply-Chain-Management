@@ -5,6 +5,7 @@ import dev.dini.scms.inventory.service.availability.InventoryAvailabilityService
 import dev.dini.scms.inventory.service.reserve.ReservationService;
 import dev.dini.scms.order.dto.*;
 import dev.dini.scms.order.entity.*;
+import dev.dini.scms.order.event.OrderConfirmedEvent;
 import dev.dini.scms.order.mapper.*;
 import dev.dini.scms.order.repository.CustomerOrderRepository;
 import dev.dini.scms.order.service.calulation.OrderCalculationService;
@@ -13,6 +14,7 @@ import dev.dini.scms.util.exception.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -32,6 +34,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
     private final InventoryAvailabilityService inventoryAvailabilityService;
     private final CustomerOrderValidator customerOrderValidator;
     private final OrderCalculationService orderCalculationService;
+    private final ApplicationEventPublisher eventPublisher;
 
 
     @Override
@@ -295,7 +298,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
 
     @Override
     @Transactional
-    public void processOrder(Long orderId) {
+    public CustomerOrderResponseDTO processOrder(Long orderId) {
         log.info("Attempting to move order ID {} to PROCESSING state", orderId);
         var order = findCustomerOrderById(orderId);
 
@@ -306,6 +309,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         order.setStatus(CustomerOrderStatus.PROCESSING);
         var processedOrder = repository.save(order);
         log.info("Order ID {} is now in PROCESSING state", processedOrder.getId());
+        return customerOrderMapper.toResponseDTO(processedOrder);
     }
 
     @Override
@@ -335,7 +339,43 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         var confirmedOrder = repository.save(order);
         log.info("Order ID {} confirmed successfully", confirmedOrder.getId());
 
+        eventPublisher.publishEvent(new OrderConfirmedEvent(confirmedOrder.getId()));
+
         return customerOrderMapper.toResponseDTO(confirmedOrder);
+    }
+
+    @Override
+    @Transactional
+    public CustomerOrderResponseDTO markShipped(Long orderId) {
+        return transitionOrderStatus(orderId, CustomerOrderStatus.CONFIRMED, CustomerOrderStatus.SHIPPED);
+    }
+
+    @Override
+    @Transactional
+    public CustomerOrderResponseDTO markDelivered(Long orderId) {
+        return transitionOrderStatus(orderId, CustomerOrderStatus.SHIPPED, CustomerOrderStatus.DELIVERED);
+    }
+
+    private CustomerOrderResponseDTO transitionOrderStatus(
+            Long orderId,
+            CustomerOrderStatus expectedCurrentStatus,
+            CustomerOrderStatus targetStatus
+    ) {
+        var order = findCustomerOrderById(orderId);
+        if (order.getStatus() == targetStatus) {
+            return customerOrderMapper.toResponseDTO(order);
+        }
+        if (order.getStatus() != expectedCurrentStatus) {
+            throw new IllegalStateException(
+                    "Order " + orderId + " cannot transition to " + targetStatus
+                            + " because current state is " + order.getStatus()
+                            + " (expected " + expectedCurrentStatus + ")."
+            );
+        }
+        order.setStatus(targetStatus);
+        var saved = repository.save(order);
+        log.info("Order ID {} transitioned from {} to {}", orderId, expectedCurrentStatus, targetStatus);
+        return customerOrderMapper.toResponseDTO(saved);
     }
 
     @Override
