@@ -64,11 +64,15 @@ public class ShipmentServiceImpl implements ShipmentService {
             );
         }
 
+        if (createDTO.status() != null && createDTO.status() != ShipmentStatus.PENDING) {
+            throw new IllegalStateException(
+                    "New shipments must start in PENDING status; use /ship or /deliver for fulfillment transitions."
+            );
+        }
+
         var shipment = shipmentMapper.toEntity(createDTO);
         shipment.setCustomerOrder(order);
-        if (shipment.getStatus() == null) {
-            shipment.setStatus(ShipmentStatus.PENDING);
-        }
+        shipment.setStatus(ShipmentStatus.PENDING);
 
         var savedShipment = shipmentRepository.save(shipment);
         log.info("Shipment created {}", savedShipment);
@@ -164,10 +168,14 @@ public class ShipmentServiceImpl implements ShipmentService {
     }
 
     private void validateStatusTransition(ShipmentStatus current, ShipmentStatus next) {
+        if (next == ShipmentStatus.SHIPPED || next == ShipmentStatus.DELIVERED) {
+            throw new IllegalStateException(
+                    "Cannot transition shipment to " + next + " via PATCH; use /ship or /deliver endpoints."
+            );
+        }
         boolean valid = switch (current) {
-            case PENDING -> next == ShipmentStatus.SHIPPED;
-            case SHIPPED -> next == ShipmentStatus.DELIVERED || next == ShipmentStatus.RETURNED;
-            case DELIVERED -> next == ShipmentStatus.RETURNED;
+            case PENDING -> false;
+            case SHIPPED, DELIVERED -> next == ShipmentStatus.RETURNED;
             case RETURNED -> false;
         };
         if (!valid) {

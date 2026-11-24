@@ -167,6 +167,28 @@ class ShipmentServiceImplTest {
     }
 
     @Test
+    @DisplayName("createShipment rejects non-PENDING status")
+    void createShipment_rejectsNonPendingStatus() {
+        when(customerOrderService.getEntityById(42L)).thenReturn(confirmedOrder);
+
+        assertThatThrownBy(() -> shipmentService.createShipment(
+                new ShipmentRequestDTO(42L, "TRK-1", "UPS", ShipmentStatus.SHIPPED)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("PENDING");
+    }
+
+    @Test
+    @DisplayName("updateShipment rejects SHIPPED or DELIVERED status transitions via PATCH")
+    void updateShipment_rejectsFulfillmentTransitions() {
+        when(shipmentRepository.findById(7L)).thenReturn(Optional.of(pendingShipment));
+
+        assertThatThrownBy(() -> shipmentService.updateShipment(
+                7L, new ShipmentRequestDTO(42L, "TRK-1", "UPS", ShipmentStatus.SHIPPED)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("/ship or /deliver");
+    }
+
+    @Test
     @DisplayName("deleteShipment rejects SHIPPED or DELIVERED shipments")
     void deleteShipment_rejectsShippedOrDelivered() {
         pendingShipment.setStatus(ShipmentStatus.SHIPPED);
