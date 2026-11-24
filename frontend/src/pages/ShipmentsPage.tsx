@@ -46,6 +46,7 @@ export function ShipmentsPage() {
   const [carrier, setCarrier] = useState('');
   const [trackingNumber, setTrackingNumber] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
 
   const loadShipments = useCallback(async () => {
     setLoading(true);
@@ -73,24 +74,33 @@ export function ShipmentsPage() {
     setDispatchingId(shipment.id);
     setCarrier(shipment.carrier ?? '');
     setTrackingNumber(shipment.trackingNumber ?? '');
-    setError(null);
+    setModalError(null);
   }
 
   function closeDispatchModal() {
     setDispatchingId(null);
     setCarrier('');
     setTrackingNumber('');
+    setModalError(null);
   }
 
   async function handleDispatch(e: React.FormEvent) {
     e.preventDefault();
     if (dispatchingId === null) return;
+
+    const trimmedCarrier = carrier.trim();
+    const trimmedTracking = trackingNumber.trim();
+    if (!trimmedCarrier || !trimmedTracking) {
+      setModalError('Carrier and tracking number are required.');
+      return;
+    }
+
     setSubmitting(true);
-    setError(null);
+    setModalError(null);
     try {
       const payload: ShipmentDispatchRequestDTO = {
-        carrier: carrier.trim(),
-        trackingNumber: trackingNumber.trim(),
+        carrier: trimmedCarrier,
+        trackingNumber: trimmedTracking,
       };
       await apiRequest<ShipmentResponseDTO>(`/shipments/${dispatchingId}/ship`, {
         method: 'POST',
@@ -99,7 +109,7 @@ export function ShipmentsPage() {
       closeDispatchModal();
       await loadShipments();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to dispatch shipment');
+      setModalError(err instanceof Error ? err.message : 'Failed to dispatch shipment');
     } finally {
       setSubmitting(false);
     }
@@ -245,6 +255,12 @@ export function ShipmentsPage() {
             </div>
 
             <form onSubmit={handleDispatch} className="mt-4 space-y-4">
+              {modalError && (
+                <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+                  {modalError}
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
                   Carrier
