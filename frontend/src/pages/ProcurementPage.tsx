@@ -5,6 +5,13 @@ import {apiRequest} from '../api/client';
 import {StatusBadge} from '../components/StatusBadge';
 import type {GoodsReceiptRequestDTO, PurchaseOrderResponseDTO} from '../types/scms';
 
+const RECEIVABLE_STATUSES = new Set([
+  'APPROVED',
+  'SHIPPED',
+  'DELIVERED',
+  'PARTIALLY_RECEIVED',
+]);
+
 export function ProcurementPage() {
   const [orders, setOrders] = useState<PurchaseOrderResponseDTO[]>([]);
   const [loading, setLoading] = useState(true);
@@ -110,9 +117,7 @@ export function ProcurementPage() {
             ) : (
               orders.map((po) => {
                 const canReceive =
-                  po.status !== 'CANCELLED' &&
-                  po.status !== 'RETURNED' &&
-                  po.status !== 'FULLY_RECEIVED' &&
+                  RECEIVABLE_STATUSES.has(po.status) &&
                   (po.items?.length ?? 0) > 0;
                 return (
                   <tr key={po.id} className="hover:bg-slate-50">
