@@ -66,6 +66,12 @@ public class CustomerOrderController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/{orderId}/process")
+    public ResponseEntity<CustomerOrderResponseDTO> processOrder(@PathVariable Long orderId) {
+        CustomerOrderResponseDTO response = orderService.processOrder(orderId);
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/{orderId}/confirm")
     public ResponseEntity<CustomerOrderResponseDTO> confirmOrder (@PathVariable Long orderId) {
         CustomerOrderResponseDTO response = orderService.confirmOrder(orderId);

@@ -27,11 +27,28 @@ public interface CustomerOrderService {
 
 
     /**
-     * Processes the order by checking inventory availability and reserving inventory.
+     * Transitions a PENDING order to PROCESSING.
      *
      * @param orderId the ID of the order to process
+     * @return the updated order response
      */
-    void processOrder(Long orderId);
+    CustomerOrderResponseDTO processOrder(Long orderId);
+
+    /**
+     * Marks a CONFIRMED order as SHIPPED.
+     *
+     * @param orderId the ID of the order to mark as shipped
+     * @return the updated order response
+     */
+    CustomerOrderResponseDTO markShipped(Long orderId);
+
+    /**
+     * Marks a SHIPPED order as DELIVERED.
+     *
+     * @param orderId the ID of the order to mark as delivered
+     * @return the updated order response
+     */
+    CustomerOrderResponseDTO markDelivered(Long orderId);
 
     /**
      * Confirms an order by changing its status to PROCESSING after inventory has been reserved.
