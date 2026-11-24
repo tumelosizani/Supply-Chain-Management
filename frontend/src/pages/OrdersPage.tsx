@@ -56,7 +56,8 @@ export function OrdersPage() {
       );
     }
     return orders.map((order) => {
-      const canMutate = order.status === 'PENDING' || order.status === 'PROCESSING';
+      const canConfirm = order.status === 'PROCESSING';
+      const canCancel = order.status === 'PENDING' || order.status === 'PROCESSING';
       return (
         <tr key={order.id} className="hover:bg-slate-50">
           <td className="px-4 py-3 font-mono text-xs text-slate-600">#{order.id}</td>
@@ -68,22 +69,26 @@ export function OrdersPage() {
             ${Number(order.totalCost ?? 0).toFixed(2)}
           </td>
           <td className="px-4 py-3 text-right">
-            {canMutate && (
+            {(canConfirm || canCancel) && (
               <div className="inline-flex gap-2">
-                <button
-                  onClick={() => handleAction(order.id, 'confirm')}
-                  className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
-                >
-                  <Check className="h-3.5 w-3.5" />
-                  Confirm
-                </button>
-                <button
-                  onClick={() => handleAction(order.id, 'cancel')}
-                  className="inline-flex items-center gap-1 rounded-md bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700 hover:bg-rose-100"
-                >
-                  <X className="h-3.5 w-3.5" />
-                  Cancel
-                </button>
+                {canConfirm && (
+                  <button
+                    onClick={() => handleAction(order.id, 'confirm')}
+                    className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                    Confirm
+                  </button>
+                )}
+                {canCancel && (
+                  <button
+                    onClick={() => handleAction(order.id, 'cancel')}
+                    className="inline-flex items-center gap-1 rounded-md bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700 hover:bg-rose-100"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    Cancel
+                  </button>
+                )}
               </div>
             )}
           </td>
