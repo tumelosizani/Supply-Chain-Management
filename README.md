@@ -1,86 +1,99 @@
-# Basic Supply Chain Management (SCM) System
+# Supply Chain Management (SCM) System
 
-This project is a basic Supply Chain Management (SCM) system built using Java 21, Gradle, and MapStruct. It aims to provide core functionalities for managing products, inventory, customer orders, procurement, and shipments. This project is intended for learning purposes and to showcase development skills.
+A full-stack Supply Chain Management (SCM) system featuring a **Spring Boot 4.2 / Spring Modulith** REST API on **Java 25** and a **React + TypeScript + Tailwind CSS** web frontend. It manages products, inventory reservations, customer orders, procurement & goods receiving, event-driven shipment provisioning, suppliers, and payments.
 
-## Technologies Used
+> See [FEATURES.md](FEATURES.md) for detailed implemented capabilities and [ROADMAP.md](ROADMAP.md) for planned work.
 
-* **Java:** 21
-* **Build Tool:** Gradle
-* **Dependency Injection:** Spring Boot
-* **Persistence:** Spring Data JPA (with your chosen JPA provider, e.g., Hibernate)
-* **Object Mapping:** MapStruct
-* **Logging:** SLF4j with Logback
-* **Testing:** (Add your testing framework if you have one, e.g., JUnit, Mockito)
+## Tech Stack
+
+### Backend
+- **Java 25** & **Gradle** (via wrapper)
+- **Spring Boot 4.2** (Web, Data JPA, Validation, Virtual Threads)
+- **Spring Modulith 2.2** for modular domain boundaries and event-driven fulfillment
+- **PostgreSQL 17** (`compose.yaml`, exposed on port `6000`, with `spring-boot-docker-compose` dev support)
+- **MapStruct 1.6** & **Lombok**
+- **Springdoc OpenAPI** (`/swagger-ui.html`)
+- **JUnit 5** & **Spring Modulith Test**
+
+### Frontend (`frontend/`)
+- **React 19** & **TypeScript**
+- **Vite** & **pnpm**
+- **Tailwind CSS v4**
+- **React Router** & **Lucide Icons**
 
 ## Modules
 
-The system is currently structured into the following modules:
+Backend domain modules under `dev.dini.scms`:
 
-* **Product:** Manages product information (creation, retrieval, update, deletion, categorization, search). Includes pagination and sorting for product summaries.
-* **Inventory:** Manages inventory levels, including creating, updating, deleting inventory records, checking availability, and handling reservations.
-* **Order:** Manages customer orders, including creation, updating, deletion, adding/updating/removing order items, checking inventory, reserving inventory, confirming, and cancelling orders.
-* **Procurement:** Manages the purchasing process, including creating and updating purchase orders and purchase order items, linked to suppliers and products.
-* **Shipment:** Manages the shipment of customer orders, including creating, updating, deleting, and retrieving shipment records linked to customer orders.
-* **Supplier:** Manages information about suppliers (creation, retrieval, update, deletion, listing).
-* **Util:** Contains utility classes, including `BaseEntity` and `InventoryUtil`, and custom exception classes.
+- **Product (`product`):** Product catalog CRUD, partial `PATCH` updates, unit pricing, and paginated/sortable summaries.
+- **Inventory (`inventory`):** Physical stock (`quantity`) and reservation (`quantityReserved`) tracking, availability checks (`available = quantity - quantityReserved`), reserve/confirm/release lifecycle, and stock replenishment.
+- **Order (`order`):** Customer order lifecycle (`PENDING` → `PROCESSING` → `CONFIRMED`, `CANCELLED`, `SHIPPED`, `DELIVERED`), line-item management in `PENDING`, pricing calculation, and inventory reservation integration.
+- **Procurement (`procurement`):** Purchase orders linked to suppliers and products, status lifecycle validation, and goods receiving (`POST /purchase-orders/{id}/receive`) with partial/full receipt tracking and automatic inventory replenishment.
+- **Shipment (`shipment`):** Shipment tracking linked to customer orders, including event-driven shipment provisioning when orders are confirmed.
+- **Supplier (`supplier`):** Supplier directory CRUD and listing.
+- **Payment (`payment`):** Payment processing (`POST /payments/process`) and order payment lookup (`GET /payments/order/{orderId}`).
+- **Seed (`seed`) & Util (`util`):** Development data seeding, `BaseEntity` auditing, shared `AddressDTO` / `PageResponse`, and centralized `GlobalExceptionHandler`.
 
-## Setup and Running
+### Frontend Views (`frontend/src/pages`)
+- **Dashboard** (`DashboardPage`)
+- **Products** (`ProductsPage`)
+- **Inventory** (`InventoryPage`)
+- **Orders** (`OrdersPage`)
+- **Procurement** (`ProcurementPage`)
+- **Shipments** (`ShipmentsPage`, filterable by `orderId`)
+- **Suppliers** (`SuppliersPage`)
 
-1.  **Prerequisites:**
-    * **Java Development Kit (JDK):** Ensure you have Java 21 installed on your system. You can download it from [Oracle Java Downloads](https://www.oracle.com/java/technologies/downloads/) or an open-source distribution like [OpenJDK](https://openjdk.java.net/).
-    * **Gradle:** Ensure you have Gradle installed. You can download it from [Gradle Releases](https://gradle.org/releases/) or use a package manager. Spring Boot projects often include a Gradle wrapper (`gradlew` and `gradlew.bat`), which automatically downloads the correct Gradle version for the project.
+## Getting Started
 
-2.  **Getting the Code:**
-    ```bash
-    git clone https://github.com/tumelosizani/Supply-Chain-Management.git
-    ```
+### Prerequisites
+- **JDK 25**
+- **Docker** (for PostgreSQL via `compose.yaml`, or a local PostgreSQL instance on `localhost:6000`)
+- **Node.js** & **pnpm** (for the frontend)
 
-3.  **Building the Project:**
-    If you have Gradle installed globally:
-    ```bash
-    gradle build
-    ```
-    If you are using the Gradle wrapper (recommended):
-    ```bash
-    ./gradlew build
-    ```
+### 1. Clone the Repository
+```bash
+git clone https://github.com/tumelosizani/Supply-Chain-Management.git
+cd Supply-Chain-Management
+```
 
-4.  **Running the Application:**
-    After a successful build, you can run the Spring Boot application using the Gradle bootRun task:
-    If you have Gradle installed globally:
-    ```bash
-    gradle bootRun
-    ```
-    If you are using the Gradle wrapper:
-    ```bash
-    ./gradlew bootRun
-    ```
+### 2. Start PostgreSQL
+Spring Boot's Docker Compose integration starts `postgres:17` automatically during `bootRun`, or you can start it manually:
+```bash
+docker compose up -d
+```
 
-    The application should start, and you can typically access its API endpoints (if you have controllers implemented) at `http://localhost:8080` (or a different port configured in your `application.properties` or `application.yml` file).
+### 3. Run the Backend
+Using the Gradle wrapper:
+```bash
+./gradlew bootRun
+```
+The API will be available at `http://localhost:8080` and Swagger UI at `http://localhost:8080/swagger-ui.html`.
 
+Run tests and full build:
+```bash
+./gradlew test
+./gradlew build
+```
 
+### 4. Run the Frontend
+```bash
+cd frontend
+pnpm install
+pnpm dev
+```
+Additional frontend scripts:
+```bash
+pnpm build   # Type-check and build for production
+pnpm lint    # Run oxlint
+```
 
 ## Future Enhancements
 
-This is a basic version of the SCM system. Potential future enhancements include:
-
-* More detailed product attributes (variants, images, units of measure).
-* Location tracking for inventory.
-* Inventory transaction history.
-* Low stock alerts.
-* More detailed purchase order workflow (status transitions, receiving).
-* Shipping tracking and integration with carriers.
-* Payment processing.
-* User authentication and authorization.
-* More comprehensive error handling and validation.
-* Unit and integration tests.
-
-## Show Your Support
-
-If you find this project helpful or interesting, feel free to:
-
-* Star the repository.
-* Fork the repository and contribute.
-* Provide feedback and suggestions.
-
-Thank you for checking out this basic SCM system!# Supply-Chain-Management
+Planned work is tracked in [ROADMAP.md](ROADMAP.md), including:
+- Completing the payment lifecycle (refunds, status history, UI integration)
+- Inventory transaction ledger & low-stock alerts
+- Multi-warehouse / location tracking
+- Procurement back-orders and return-to-vendor (RTV) flows
+- Richer product attributes (SKUs, variants, units of measure, images)
+- Authentication & role-based access control (Spring Security)
+- Database migrations (Flyway/Liquibase) and RFC 9457 `ProblemDetail` error responses
