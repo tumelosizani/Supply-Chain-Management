@@ -32,14 +32,18 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 
 /**
- * Populates the database with realistic initial supply chain data when empty.
+ * Populates the database with 1,000+ realistic supply chain records when empty.
  * Runs automatically outside the {@code test} profile unless disabled via {@code scms.seed.enabled=false}.
  */
 @Slf4j
@@ -48,6 +52,41 @@ import java.util.Map;
 @ConditionalOnProperty(name = "scms.seed.enabled", havingValue = "true", matchIfMissing = true)
 @RequiredArgsConstructor
 public class DataSeeder implements ApplicationRunner {
+
+    private static final int PRODUCT_COUNT = 200;
+    private static final int SUPPLIER_COUNT = 50;
+    private static final int CUSTOMER_ORDER_COUNT = 350;
+    private static final int PURCHASE_ORDER_COUNT = 150;
+
+    private static final String[] WAREHOUSES = {
+            "Johannesburg Hub", "Cape Town DC", "Durban Port",
+            "Pretoria North", "Gqeberha Depot", "Bloemfontein Central",
+            "Polokwane Terminal", "Nelspruit Depot", "East London Hub"
+    };
+
+    private static final String[] CARRIERS = {
+            "The Courier Guy", "RAM Hand-to-Hand", "DHL Express",
+            "FedEx South Africa", "Dawn Wing", "Aramex"
+    };
+
+    private static final CitySpec[] CITIES = {
+            new CitySpec("Cape Town", "Western Cape", "8001", "021"),
+            new CitySpec("Johannesburg", "Gauteng", "2001", "011"),
+            new CitySpec("Sandton", "Gauteng", "2196", "010"),
+            new CitySpec("Durban", "KwaZulu-Natal", "4001", "031"),
+            new CitySpec("Pretoria", "Gauteng", "0002", "012"),
+            new CitySpec("Gqeberha", "Eastern Cape", "6001", "041"),
+            new CitySpec("Bloemfontein", "Free State", "9301", "051"),
+            new CitySpec("Polokwane", "Limpopo", "0700", "015"),
+            new CitySpec("Nelspruit", "Mpumalanga", "1200", "013"),
+            new CitySpec("East London", "Eastern Cape", "5201", "043")
+    };
+
+    private static final String[] STREET_NAMES = {
+            "Long Street", "Rivonia Road", "Marine Parade", "Commissioner Street",
+            "Church Square", "Jan Smuts Avenue", "Bree Street", "Florida Road",
+            "Hatfield Street", "Walmer Boulevard", "President Brand Street", "Market Street"
+    };
 
     private final ProductRepository productRepository;
     private final InventoryRepository inventoryRepository;
@@ -65,162 +104,264 @@ public class DataSeeder implements ApplicationRunner {
             return;
         }
 
-        log.info("Seeding realistic supply chain data...");
+        log.info("Seeding realistic supply chain dataset (1,000+ records)...");
+        Random rng = new Random(42L);
         LocalDateTime now = LocalDateTime.now();
 
-        List<Product> products = productRepository.saveAll(buildProducts());
-        List<Supplier> suppliers = supplierRepository.saveAll(buildSuppliers());
-        List<CustomerOrder> orders = customerOrderRepository.saveAll(buildCustomerOrders(products, now));
+        List<Product> products = productRepository.saveAll(buildProducts(rng));
+        List<Supplier> suppliers = supplierRepository.saveAll(buildSuppliers(rng));
+        List<CustomerOrder> orders = customerOrderRepository.saveAll(buildCustomerOrders(products, rng, now));
 
         // Keep inventory.quantityReserved aligned with active (PENDING / PROCESSING) customer orders.
         Map<Long, Integer> reservedByProductId = calculateReservedQuantities(orders);
-        inventoryRepository.saveAll(buildInventories(products, reservedByProductId));
+        List<Inventory> inventories = inventoryRepository.saveAll(buildInventories(products, reservedByProductId, rng));
 
-        purchaseOrderRepository.saveAll(buildPurchaseOrders(suppliers, products, now));
-        shipmentRepository.saveAll(buildShipments(orders));
-        paymentRepository.saveAll(buildPayments(orders, now));
+        List<PurchaseOrder> purchaseOrders = purchaseOrderRepository.saveAll(buildPurchaseOrders(suppliers, products, rng, now));
+        List<Shipment> shipments = shipmentRepository.saveAll(buildShipments(orders, rng));
+        List<Payment> payments = paymentRepository.saveAll(buildPayments(orders, rng));
 
-        log.info("Seeded {} products, {} suppliers, {} customer orders, and {} purchase orders.",
-                products.size(), suppliers.size(), orders.size(), 6);
+        int orderItems = orders.stream().mapToInt(o -> o.getItems().size()).sum();
+        int poItems = purchaseOrders.stream().mapToInt(po -> po.getItems().size()).sum();
+        int total = products.size() + inventories.size() + suppliers.size()
+                + orders.size() + orderItems + purchaseOrders.size() + poItems
+                + shipments.size() + payments.size();
+
+        log.info("Seeded {} total records ({} products, {} inventories, {} suppliers, {} customer orders [{} items], {} purchase orders [{} items], {} shipments, {} payments).",
+                total, products.size(), inventories.size(), suppliers.size(),
+                orders.size(), orderItems, purchaseOrders.size(), poItems,
+                shipments.size(), payments.size());
     }
 
-    private List<Product> buildProducts() {
-        return List.of(
-                product("Ergonomic Wireless Mouse", "2.4GHz wireless mouse with adjustable 800-3200 DPI sensor.", "25.99", "Electronics"),
-                product("Portable Bluetooth Speaker", "Water-resistant speaker with 12-hour battery life and USB-C charging.", "49.99", "Electronics"),
-                product("Mechanical Gaming Keyboard", "Compact TKL mechanical keyboard with tactile switches and RGB.", "79.99", "Electronics"),
-                product("Noise-Cancelling Earbuds", "True wireless earbuds with active noise cancellation and charging case.", "59.99", "Electronics"),
-                product("Fast Wireless Charger", "15W Qi-certified wireless charging pad with braided USB-C cable.", "29.99", "Electronics"),
-                product("A5 Hardcover Notebook", "200-page ruled hardcover notebook with elastic closure.", "6.49", "Stationery"),
-                product("Gel Ballpoint Pens (10-Pack)", "Smooth-writing 0.7mm black and blue gel pens.", "5.99", "Stationery"),
-                product("LED Desk Lamp", "Dimmable LED task lamp with adjustable color temperature.", "24.99", "Home & Office"),
-                product("Modular Desk Organizer", "Bamboo and steel multi-compartment desk tray.", "18.99", "Home & Office"),
-                product("Non-Slip Yoga Mat", "6mm high-density TPE exercise mat with carry strap.", "29.99", "Fitness"),
-                product("Insulated Water Bottle 1L", "Double-wall vacuum-insulated stainless steel bottle.", "19.49", "Fitness"),
-                product("Programmable Coffee Maker", "12-cup drip coffee brewer with thermal carafe and timer.", "89.99", "Home Appliances"),
-                product("1.7L Electric Kettle", "Stainless steel rapid-boil kettle with auto shut-off.", "34.99", "Home Appliances"),
-                product("Water-Resistant Commuter Backpack", "22L laptop backpack with padded 16-inch sleeve.", "45.99", "Accessories"),
-                product("10,000mAh Power Bank", "Slim dual-port USB-C PD portable charger.", "27.99", "Accessories")
-        );
-    }
-
-    private List<Inventory> buildInventories(List<Product> products, Map<Long, Integer> reservedByProductId) {
-        String[] warehouses = {
-                "Johannesburg Hub", "Cape Town DC", "Durban Port",
-                "Pretoria North", "Gqeberha Depot", "Bloemfontein Central"
+    private List<Product> buildProducts(Random rng) {
+        String[] brands = {"ProLine", "Apex", "Nova", "ErgoTech", "Vanguard", "Summit", "Core", "Pulse"};
+        String[] variants = {"Compact", "Standard", "Pro", "Ultra", "Lite", "Studio", "Industrial", "Eco"};
+        ProductTemplate[] templates = {
+                new ProductTemplate("Wireless Mouse", "2.4GHz ergonomic mouse with adjustable DPI", "Electronics", 18, 65),
+                new ProductTemplate("Bluetooth Speaker", "Portable water-resistant speaker with USB-C charging", "Electronics", 35, 140),
+                new ProductTemplate("Mechanical Keyboard", "Tactile mechanical keyboard with aluminum top plate", "Electronics", 55, 180),
+                new ProductTemplate("Wireless Earbuds", "Active noise-cancelling earbuds with charging case", "Electronics", 40, 150),
+                new ProductTemplate("USB-C Docking Station", "Multi-port hub with HDMI, Ethernet, and PD passthrough", "Electronics", 45, 130),
+                new ProductTemplate("Hardcover Notebook", "200-page archival paper notebook with lay-flat binding", "Stationery", 5, 18),
+                new ProductTemplate("Gel Pen Pack", "10-pack smooth-flow 0.7mm archival gel pens", "Stationery", 4, 15),
+                new ProductTemplate("Sticky Note Cube", "400-sheet recycled adhesive memo block", "Stationery", 3, 12),
+                new ProductTemplate("LED Desk Lamp", "Dimmable task lamp with adjustable color temperature", "Home & Office", 20, 75),
+                new ProductTemplate("Modular Desk Organizer", "Bamboo and powder-coated steel desk tray", "Home & Office", 14, 45),
+                new ProductTemplate("Monitor Riser Stand", "Ergonomic aluminum stand with cable channel", "Home & Office", 25, 80),
+                new ProductTemplate("Yoga Mat", "6mm high-density non-slip TPE exercise mat", "Fitness", 22, 60),
+                new ProductTemplate("Insulated Water Bottle", "Double-wall vacuum stainless steel 1L bottle", "Fitness", 15, 40),
+                new ProductTemplate("Resistance Band Set", "5-level fabric resistance bands with carry pouch", "Fitness", 18, 48),
+                new ProductTemplate("Programmable Coffee Maker", "12-cup drip brewer with thermal carafe", "Home Appliances", 65, 160),
+                new ProductTemplate("Electric Kettle", "1.7L rapid-boil stainless steel kettle", "Home Appliances", 28, 70),
+                new ProductTemplate("Commuter Backpack", "22L water-resistant laptop backpack", "Accessories", 35, 95),
+                new ProductTemplate("Portable Power Bank", "10,000mAh dual-port USB-C PD battery pack", "Accessories", 22, 65),
+                new ProductTemplate("Laptop Sleeve", "Shock-absorbing neoprene 15-inch protective sleeve", "Accessories", 14, 38),
+                new ProductTemplate("Barcode Label Roll", "Thermal shipping labels, 500-pack 100x150mm", "Packaging", 9, 28)
         };
-        int[] baseStock = {150, 200, 75, 90, 130, 320, 450, 180, 95, 120, 180, 60, 85, 240, 310};
 
+        List<Product> products = new ArrayList<>(PRODUCT_COUNT);
+        for (int i = 0; i < PRODUCT_COUNT; i++) {
+            ProductTemplate tpl = templates[i % templates.length];
+            String brand = brands[(i / templates.length) % brands.length];
+            String variant = variants[(i * 3 + rng.nextInt(variants.length)) % variants.length];
+            int priceInt = tpl.minPrice() + rng.nextInt(tpl.maxPrice() - tpl.minPrice() + 1);
+            BigDecimal price = BigDecimal.valueOf(priceInt).add(new BigDecimal("0.99"));
+
+            Product p = new Product();
+            p.setName(brand + " " + tpl.baseName() + " " + variant + " #" + (i + 1));
+            p.setDescription(tpl.description() + " (" + brand + " " + variant + " series).");
+            p.setUnitPrice(price);
+            p.setCategory(tpl.category());
+            products.add(p);
+        }
+        return products;
+    }
+
+    private List<Inventory> buildInventories(List<Product> products, Map<Long, Integer> reservedByProductId, Random rng) {
         List<Inventory> inventories = new ArrayList<>(products.size());
         for (int i = 0; i < products.size(); i++) {
             Product p = products.get(i);
             int reserved = reservedByProductId.getOrDefault(p.getId(), 0);
-            int physical = Math.max(baseStock[i], reserved + 10);
-            inventories.add(new Inventory(p, physical, reserved, warehouses[i % warehouses.length]));
+            int physical = Math.max(40 + rng.nextInt(360), reserved + 25);
+            inventories.add(new Inventory(p, physical, reserved, WAREHOUSES[i % WAREHOUSES.length]));
         }
         return inventories;
     }
 
-    private List<Supplier> buildSuppliers() {
-        return List.of(
-                supplier("Cape Town Supplies", "0211234567", "orders@capetownsupplies.co.za",
-                        address("123 Long Street", "Cape Town", "Western Cape", "South Africa", "8001"),
-                        "https://www.capetownsupplies.co.za", 4.6),
-                supplier("Durban Coastal Distributors", "0317654321", "procurement@durbancoastal.co.za",
-                        address("456 Marine Parade", "Durban", "KwaZulu-Natal", "South Africa", "4001"),
-                        "https://www.durbancoastal.co.za", 4.3),
-                supplier("Joburg Central Traders", "0119876543", "sales@joburgtraders.co.za",
-                        address("789 Commissioner Street", "Johannesburg", "Gauteng", "South Africa", "2001"),
-                        "https://www.joburgtraders.co.za", 4.8),
-                supplier("Pretoria Tech Partners", "0123456789", "support@pretoriatech.co.za",
-                        address("321 Church Square", "Pretoria", "Gauteng", "South Africa", "0002"),
-                        "https://www.pretoriatech.co.za", 4.5),
-                supplier("Bloemfontein Wholesale Goods", "0511239876", "info@bloemwholesale.co.za",
-                        address("654 President Brand Street", "Bloemfontein", "Free State", "South Africa", "9301"),
-                        "https://www.bloemwholesale.co.za", 4.0),
-                supplier("Eastern Cape Logistics & Supply", "0417654321", "dispatch@eclogistics.co.za",
-                        address("987 Beach Road", "Gqeberha", "Eastern Cape", "South Africa", "6001"),
-                        "https://www.eclogistics.co.za", 4.4)
-        );
+    private List<Supplier> buildSuppliers(Random rng) {
+        String[] prefixes = {"Metro", "Coastal", "Highveld", "Southern", "Atlas", "Vertex", "Horizon", "Premier", "Pinnacle", "United"};
+        String[] suffixes = {"Supplies", "Distributors", "Traders", "Logistics", "Wholesale", "Partners", "Industries", "Enterprises"};
+
+        List<Supplier> suppliers = new ArrayList<>(SUPPLIER_COUNT);
+        for (int i = 0; i < SUPPLIER_COUNT; i++) {
+            CitySpec city = CITIES[i % CITIES.length];
+            String prefix = prefixes[i % prefixes.length];
+            String suffix = suffixes[(i / prefixes.length) % suffixes.length];
+            String name = city.city() + " " + prefix + " " + suffix;
+            String slug = (prefix + "-" + suffix + "-" + (i + 1)).toLowerCase();
+
+            Supplier s = new Supplier();
+            s.setName(name);
+            s.setPhoneNumber(city.areaCode() + String.format("%07d", 1000000 + rng.nextInt(8999999)));
+            s.setEmail("orders@" + slug + ".co.za");
+            s.setAddress(randomAddress(city, rng));
+            s.setWebsite("https://www." + slug + ".co.za");
+            s.setRating(BigDecimal.valueOf(3.5 + rng.nextDouble() * 1.5).setScale(1, RoundingMode.HALF_UP).doubleValue());
+            suppliers.add(s);
+        }
+        return suppliers;
     }
 
-    private List<CustomerOrder> buildCustomerOrders(List<Product> products, LocalDateTime now) {
-        return List.of(
-                customerOrder(now.minusDays(14), CustomerOrderStatus.DELIVERED,
-                        address("42 Bree Street", "Cape Town", "Western Cape", "South Africa", "8001"),
-                        List.of(itemSpec(products.get(0), 4), itemSpec(products.get(2), 2))),
-                customerOrder(now.minusDays(9), CustomerOrderStatus.SHIPPED,
-                        address("18 Rivonia Road", "Sandton", "Gauteng", "South Africa", "2196"),
-                        List.of(itemSpec(products.get(1), 3), itemSpec(products.get(14), 5))),
-                customerOrder(now.minusDays(5), CustomerOrderStatus.CONFIRMED,
-                        address("77 Florida Road", "Durban", "KwaZulu-Natal", "South Africa", "4001"),
-                        List.of(itemSpec(products.get(5), 20), itemSpec(products.get(6), 15), itemSpec(products.get(8), 4))),
-                customerOrder(now.minusDays(2), CustomerOrderStatus.PROCESSING,
-                        address("105 Hatfield Street", "Pretoria", "Gauteng", "South Africa", "0028"),
-                        List.of(itemSpec(products.get(3), 6), itemSpec(products.get(4), 6))),
-                customerOrder(now.minusDays(1), CustomerOrderStatus.PENDING,
-                        address("14 Nelson Mandela Drive", "Bloemfontein", "Free State", "South Africa", "9301"),
-                        List.of(itemSpec(products.get(9), 8), itemSpec(products.get(10), 10))),
-                customerOrder(now.minusHours(6), CustomerOrderStatus.PENDING,
-                        address("88 Walmer Boulevard", "Gqeberha", "Eastern Cape", "South Africa", "6070"),
-                        List.of(itemSpec(products.get(11), 2), itemSpec(products.get(12), 3), itemSpec(products.get(13), 4))),
-                customerOrder(now.minusDays(7), CustomerOrderStatus.CANCELLED,
-                        address("210 Jan Smuts Avenue", "Johannesburg", "Gauteng", "South Africa", "2193"),
-                        List.of(itemSpec(products.get(7), 5)))
-        );
+    private List<CustomerOrder> buildCustomerOrders(List<Product> products, Random rng, LocalDateTime now) {
+        CustomerOrderStatus[] statuses = {
+                CustomerOrderStatus.DELIVERED, CustomerOrderStatus.DELIVERED, CustomerOrderStatus.DELIVERED,
+                CustomerOrderStatus.SHIPPED, CustomerOrderStatus.SHIPPED,
+                CustomerOrderStatus.CONFIRMED, CustomerOrderStatus.CONFIRMED,
+                CustomerOrderStatus.PROCESSING,
+                CustomerOrderStatus.PENDING, CustomerOrderStatus.PENDING,
+                CustomerOrderStatus.CANCELLED
+        };
+
+        List<CustomerOrder> orders = new ArrayList<>(CUSTOMER_ORDER_COUNT);
+        for (int i = 0; i < CUSTOMER_ORDER_COUNT; i++) {
+            CustomerOrderStatus status = statuses[i % statuses.length];
+            LocalDateTime orderDate = now.minusDays(rng.nextInt(90)).minusHours(rng.nextInt(24));
+            CitySpec city = CITIES[rng.nextInt(CITIES.length)];
+
+            CustomerOrder order = new CustomerOrder();
+            order.setOrderDate(orderDate);
+            order.setStatus(status);
+            order.setShippingAddress(randomAddress(city, rng));
+
+            int itemCount = 1 + rng.nextInt(4);
+            Set<Integer> usedProductIndices = new HashSet<>();
+            List<CustomerOrderItem> items = new ArrayList<>(itemCount);
+            BigDecimal total = BigDecimal.ZERO;
+
+            for (int j = 0; j < itemCount; j++) {
+                int prodIdx = rng.nextInt(products.size());
+                if (!usedProductIndices.add(prodIdx)) {
+                    continue;
+                }
+                Product product = products.get(prodIdx);
+                int qty = 1 + rng.nextInt(8);
+
+                CustomerOrderItem item = new CustomerOrderItem();
+                item.setCustomerOrder(order);
+                item.setProduct(product);
+                item.setQuantity(qty);
+                item.setPrice(product.getUnitPrice());
+                items.add(item);
+
+                total = total.add(product.getUnitPrice().multiply(BigDecimal.valueOf(qty)));
+            }
+
+            order.setItems(items);
+            order.setTotalCost(total);
+            orders.add(order);
+        }
+        return orders;
     }
 
-    private List<PurchaseOrder> buildPurchaseOrders(List<Supplier> suppliers, List<Product> products, LocalDateTime now) {
-        return List.of(
-                purchaseOrder(suppliers.get(2), now.minusDays(20), now.minusDays(13), PurchaseOrderStatus.FULLY_RECEIVED,
-                        List.of(
-                                poItemSpec(products.get(0), 100, 100, "16.50"),
-                                poItemSpec(products.get(2), 50, 50, "52.00")
-                        )),
-                purchaseOrder(suppliers.get(0), now.minusDays(12), now.minusDays(5), PurchaseOrderStatus.PARTIALLY_RECEIVED,
-                        List.of(
-                                poItemSpec(products.get(1), 80, 50, "31.00"),
-                                poItemSpec(products.get(3), 60, 60, "38.50")
-                        )),
-                purchaseOrder(suppliers.get(1), now.minusDays(6), now.plusDays(2), PurchaseOrderStatus.SHIPPED,
-                        List.of(
-                                poItemSpec(products.get(11), 30, 0, "58.00"),
-                                poItemSpec(products.get(12), 40, 0, "21.00")
-                        )),
-                purchaseOrder(suppliers.get(3), now.minusDays(3), now.plusDays(5), PurchaseOrderStatus.APPROVED,
-                        List.of(
-                                poItemSpec(products.get(4), 120, 0, "18.00"),
-                                poItemSpec(products.get(14), 150, 0, "16.75")
-                        )),
-                purchaseOrder(suppliers.get(4), now.minusDays(1), now.plusDays(7), PurchaseOrderStatus.PENDING,
-                        List.of(
-                                poItemSpec(products.get(5), 250, 0, "3.20"),
-                                poItemSpec(products.get(6), 300, 0, "2.90")
-                        )),
-                purchaseOrder(suppliers.get(5), now.minusDays(15), now.minusDays(8), PurchaseOrderStatus.CANCELLED,
-                        List.of(
-                                poItemSpec(products.get(9), 40, 0, "17.50")
-                        ))
-        );
+    private List<PurchaseOrder> buildPurchaseOrders(List<Supplier> suppliers, List<Product> products, Random rng, LocalDateTime now) {
+        PurchaseOrderStatus[] statuses = {
+                PurchaseOrderStatus.FULLY_RECEIVED, PurchaseOrderStatus.FULLY_RECEIVED,
+                PurchaseOrderStatus.PARTIALLY_RECEIVED,
+                PurchaseOrderStatus.SHIPPED,
+                PurchaseOrderStatus.APPROVED,
+                PurchaseOrderStatus.PENDING,
+                PurchaseOrderStatus.CANCELLED
+        };
+
+        List<PurchaseOrder> purchaseOrders = new ArrayList<>(PURCHASE_ORDER_COUNT);
+        for (int i = 0; i < PURCHASE_ORDER_COUNT; i++) {
+            PurchaseOrderStatus status = statuses[i % statuses.length];
+            LocalDateTime orderDate = now.minusDays(1 + rng.nextInt(60));
+            LocalDateTime expectedDelivery = status == PurchaseOrderStatus.FULLY_RECEIVED
+                    ? orderDate.plusDays(5 + rng.nextInt(5))
+                    : now.plusDays(1 + rng.nextInt(14));
+
+            PurchaseOrder po = new PurchaseOrder();
+            po.setSupplier(suppliers.get(rng.nextInt(suppliers.size())));
+            po.setOrderDate(orderDate);
+            po.setExpectedDeliveryDate(expectedDelivery);
+            po.setStatus(status);
+
+            int itemCount = 1 + rng.nextInt(4);
+            Set<Integer> usedProductIndices = new HashSet<>();
+            List<PurchaseOrderItem> items = new ArrayList<>(itemCount);
+
+            for (int j = 0; j < itemCount; j++) {
+                int prodIdx = rng.nextInt(products.size());
+                if (!usedProductIndices.add(prodIdx)) {
+                    continue;
+                }
+                Product product = products.get(prodIdx);
+                int qty = 20 + rng.nextInt(130);
+                int received = switch (status) {
+                    case FULLY_RECEIVED -> qty;
+                    case PARTIALLY_RECEIVED -> Math.max(1, qty / 2);
+                    default -> 0;
+                };
+
+                PurchaseOrderItem item = new PurchaseOrderItem();
+                item.setPurchaseOrder(po);
+                item.setProduct(product);
+                item.setQuantity(qty);
+                item.setQuantityReceived(received);
+                item.setUnitPrice(product.getUnitPrice().multiply(new BigDecimal("0.65")).setScale(2, RoundingMode.HALF_UP));
+                items.add(item);
+            }
+
+            po.setItems(items);
+            purchaseOrders.add(po);
+        }
+        return purchaseOrders;
     }
 
-    private List<Shipment> buildShipments(List<CustomerOrder> orders) {
-        return List.of(
-                new Shipment(orders.get(0), "TRK-ZA-884201", "The Courier Guy", ShipmentStatus.DELIVERED),
-                new Shipment(orders.get(1), "TRK-ZA-884355", "RAM Hand-to-Hand", ShipmentStatus.SHIPPED),
-                new Shipment(orders.get(2), "TRK-ZA-884419", "DHL Express", ShipmentStatus.PENDING)
-        );
+    private List<Shipment> buildShipments(List<CustomerOrder> orders, Random rng) {
+        List<Shipment> shipments = new ArrayList<>();
+        int seq = 100001;
+        for (CustomerOrder order : orders) {
+            ShipmentStatus shipmentStatus = switch (order.getStatus()) {
+                case DELIVERED -> ShipmentStatus.DELIVERED;
+                case SHIPPED -> ShipmentStatus.SHIPPED;
+                case CONFIRMED -> ShipmentStatus.PENDING;
+                default -> null;
+            };
+            if (shipmentStatus == null) {
+                continue;
+            }
+            shipments.add(new Shipment(
+                    order,
+                    "TRK-ZA-" + (seq++),
+                    CARRIERS[rng.nextInt(CARRIERS.length)],
+                    shipmentStatus
+            ));
+        }
+        return shipments;
     }
 
-    private List<Payment> buildPayments(List<CustomerOrder> orders, LocalDateTime now) {
-        return List.of(
-                payment(orders.get(0), PaymentStatus.COMPLETED, PaymentMethod.CREDIT_CARD, now.minusDays(14), "PAY-2026-0001"),
-                payment(orders.get(1), PaymentStatus.COMPLETED, PaymentMethod.BANK_TRANSFER, now.minusDays(9), "PAY-2026-0002"),
-                payment(orders.get(2), PaymentStatus.COMPLETED, PaymentMethod.DEBIT_CARD, now.minusDays(5), "PAY-2026-0003"),
-                payment(orders.get(3), PaymentStatus.PENDING, PaymentMethod.CREDIT_CARD, now.minusDays(2), "PAY-2026-0004"),
-                payment(orders.get(4), PaymentStatus.PENDING, PaymentMethod.BANK_TRANSFER, now.minusDays(1), "PAY-2026-0005"),
-                payment(orders.get(6), PaymentStatus.REFUNDED, PaymentMethod.CREDIT_CARD, now.minusDays(6), "PAY-2026-0006")
-        );
+    private List<Payment> buildPayments(List<CustomerOrder> orders, Random rng) {
+        PaymentMethod[] methods = PaymentMethod.values();
+        List<Payment> payments = new ArrayList<>(orders.size());
+        int seq = 1;
+        for (CustomerOrder order : orders) {
+            PaymentStatus paymentStatus = switch (order.getStatus()) {
+                case DELIVERED, SHIPPED, CONFIRMED -> PaymentStatus.COMPLETED;
+                case PROCESSING, PENDING, NEW -> PaymentStatus.PENDING;
+                case CANCELLED -> rng.nextBoolean() ? PaymentStatus.REFUNDED : PaymentStatus.FAILED;
+            };
+
+            Payment p = new Payment();
+            p.setCustomerOrder(order);
+            p.setAmount(order.getTotalCost());
+            p.setStatus(paymentStatus);
+            p.setPaymentMethod(methods[rng.nextInt(methods.length)]);
+            p.setPaymentDate(order.getOrderDate().plusMinutes(5 + rng.nextInt(120)));
+            p.setTransactionReference(String.format("PAY-2026-%05d", seq++));
+            payments.add(p);
+        }
+        return payments;
     }
 
     private Map<Long, Integer> calculateReservedQuantities(List<CustomerOrder> orders) {
@@ -236,101 +377,17 @@ public class DataSeeder implements ApplicationRunner {
         return reserved;
     }
 
-    private Product product(String name, String description, String unitPrice, String category) {
-        Product p = new Product();
-        p.setName(name);
-        p.setDescription(description);
-        p.setUnitPrice(new BigDecimal(unitPrice));
-        p.setCategory(category);
-        return p;
-    }
-
-    private Supplier supplier(String name, String phone, String email, Address address, String website, double rating) {
-        Supplier s = new Supplier();
-        s.setName(name);
-        s.setPhoneNumber(phone);
-        s.setEmail(email);
-        s.setAddress(address);
-        s.setWebsite(website);
-        s.setRating(rating);
-        return s;
-    }
-
-    private Address address(String street, String city, String state, String country, String zipCode) {
+    private Address randomAddress(CitySpec city, Random rng) {
         Address a = new Address();
-        a.setStreet(street);
-        a.setCity(city);
-        a.setState(state);
-        a.setCountry(country);
-        a.setZipCode(zipCode);
+        a.setStreet((1 + rng.nextInt(450)) + " " + STREET_NAMES[rng.nextInt(STREET_NAMES.length)]);
+        a.setCity(city.city());
+        a.setState(city.province());
+        a.setCountry("South Africa");
+        a.setZipCode(city.zipCode());
         return a;
     }
 
-    private CustomerOrder customerOrder(LocalDateTime orderDate, CustomerOrderStatus status, Address address, List<OrderItemSpec> specs) {
-        CustomerOrder order = new CustomerOrder();
-        order.setOrderDate(orderDate);
-        order.setStatus(status);
-        order.setShippingAddress(address);
+    private record ProductTemplate(String baseName, String description, String category, int minPrice, int maxPrice) {}
 
-        BigDecimal total = BigDecimal.ZERO;
-        List<CustomerOrderItem> items = new ArrayList<>(specs.size());
-        for (OrderItemSpec spec : specs) {
-            CustomerOrderItem item = new CustomerOrderItem();
-            item.setCustomerOrder(order);
-            item.setProduct(spec.product());
-            item.setQuantity(spec.quantity());
-            item.setPrice(spec.product().getUnitPrice());
-            items.add(item);
-            total = total.add(spec.product().getUnitPrice().multiply(BigDecimal.valueOf(spec.quantity())));
-        }
-        order.setItems(items);
-        order.setTotalCost(total);
-        return order;
-    }
-
-    private PurchaseOrder purchaseOrder(Supplier supplier, LocalDateTime orderDate, LocalDateTime expectedDelivery,
-                                        PurchaseOrderStatus status, List<PoItemSpec> specs) {
-        PurchaseOrder po = new PurchaseOrder();
-        po.setSupplier(supplier);
-        po.setOrderDate(orderDate);
-        po.setExpectedDeliveryDate(expectedDelivery);
-        po.setStatus(status);
-
-        List<PurchaseOrderItem> items = new ArrayList<>(specs.size());
-        for (PoItemSpec spec : specs) {
-            PurchaseOrderItem item = new PurchaseOrderItem();
-            item.setPurchaseOrder(po);
-            item.setProduct(spec.product());
-            item.setQuantity(spec.quantity());
-            item.setQuantityReceived(spec.quantityReceived());
-            item.setUnitPrice(spec.unitPrice());
-            items.add(item);
-        }
-        po.setItems(items);
-        return po;
-    }
-
-    private Payment payment(CustomerOrder order, PaymentStatus status, PaymentMethod method,
-                            LocalDateTime paymentDate, String reference) {
-        Payment p = new Payment();
-        p.setCustomerOrder(order);
-        p.setAmount(order.getTotalCost());
-        p.setStatus(status);
-        p.setPaymentMethod(method);
-        p.setPaymentDate(paymentDate);
-        p.setTransactionReference(reference);
-        return p;
-    }
-
-    private OrderItemSpec itemSpec(Product product, int quantity) {
-        return new OrderItemSpec(product, quantity);
-    }
-
-    private PoItemSpec poItemSpec(Product product, int quantity, int quantityReceived, String unitPrice) {
-        return new PoItemSpec(product, quantity, quantityReceived, new BigDecimal(unitPrice));
-    }
-
-    private record OrderItemSpec(Product product, int quantity) {}
-
-    private record PoItemSpec(Product product, int quantity, int quantityReceived, BigDecimal unitPrice) {}
+    private record CitySpec(String city, String province, String zipCode, String areaCode) {}
 }
