@@ -35,7 +35,7 @@ public class InventoryServiceImpl implements InventoryService {
 
         inventory.setProduct(productService.getEntityById(createDTO.productId()));
 
-        try{
+        try {
             Inventory savedInventory = inventoryRepository.save(inventory);
             log.info("Inventory created {}", savedInventory);
             return inventoryMapper.toResponseDTO(savedInventory);
@@ -76,7 +76,6 @@ public class InventoryServiceImpl implements InventoryService {
                 .map(inventoryMapper::toSummaryDTO)
                 .toList();
     }
-
 
     @Override
     @Deprecated
@@ -146,17 +145,30 @@ public class InventoryServiceImpl implements InventoryService {
         return quantity;
     }
 
-
     @Override
+    @Transactional
     public InventoryResponseDTO addStock(StockUpdateRequestDTO request) {
         log.info("Adding stock for product ID {} with quantity {}", request.productId(), request.quantity());
 
-        // Check if the product ID is valid and if the inventory exists.
-        var inventory = inventoryUtil.findInventoryByProductId(request.productId());
+        if (request.quantity() <= 0) {
+            throw new IllegalArgumentException("Quantity to add must be positive. Provided: " + request.quantity());
+        }
 
-        // Update the quantity
-        inventory.setQuantity(inventory.getQuantity() + request.quantity());
+        // Check if the inventory exists; if not, create initial inventory for the product
+        Inventory inventory = inventoryRepository.findByProductId(request.productId())
+                .orElseGet(() -> {
+                    log.info("No inventory found for product ID {}. Initializing default inventory.", request.productId());
+                    var product = productService.getEntityById(request.productId());
+                    var newInv = new Inventory();
+                    newInv.setProduct(product);
+                    newInv.setQuantity(0);
+                    newInv.setQuantityReserved(0);
+                    newInv.setWarehouseLocation("DEFAULT");
+                    return newInv;
+                });
 
+        int currentQty = inventory.getQuantity() != null ? inventory.getQuantity() : 0;
+        inventory.setQuantity(currentQty + request.quantity());
 
         var savedInventory = inventoryRepository.save(inventory);
         log.info("Stock added for product ID {}. New quantity: {}", request.productId(), savedInventory.getQuantity());

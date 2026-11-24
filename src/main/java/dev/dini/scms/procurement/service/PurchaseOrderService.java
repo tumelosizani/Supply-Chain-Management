@@ -1,5 +1,6 @@
 package dev.dini.scms.procurement.service;
 
+import dev.dini.scms.procurement.dto.GoodsReceiptRequestDTO;
 import dev.dini.scms.procurement.dto.PurchaseOrderRequestDTO;
 import dev.dini.scms.procurement.dto.PurchaseOrderResponseDTO;
 import dev.dini.scms.procurement.entity.PurchaseOrderStatus;
@@ -18,4 +19,6 @@ public interface PurchaseOrderService {
     List<PurchaseOrderResponseDTO> getAllPurchaseOrders();
 
     PurchaseOrderResponseDTO updatePurchaseOrderStatus(Long id, PurchaseOrderStatus status);
+
+    PurchaseOrderResponseDTO receiveGoods(Long id, GoodsReceiptRequestDTO receiptDTO);
 }

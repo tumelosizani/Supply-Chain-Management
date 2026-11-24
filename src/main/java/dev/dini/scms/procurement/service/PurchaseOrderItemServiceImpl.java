@@ -2,6 +2,7 @@ package dev.dini.scms.procurement.service;
 
 import dev.dini.scms.procurement.dto.*;
 import dev.dini.scms.procurement.entity.PurchaseOrderItem;
+import dev.dini.scms.util.exception.InvalidPurchaseOrderStateException;
 import dev.dini.scms.util.exception.PurchaseOrderNotFoundException;
 import dev.dini.scms.procurement.mapper.PurchaseOrderItemMapper;
 import dev.dini.scms.procurement.repository.PurchaseOrderItemRepository;
@@ -13,20 +14,24 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PurchaseOrderItemServiceImpl implements  PurchaseOrderItemService {
+public class PurchaseOrderItemServiceImpl implements PurchaseOrderItemService {
 
     private final PurchaseOrderItemRepository purchaseOrderItemRepository;
     private final PurchaseOrderItemMapper purchaseOrderItemMapper;
-
-
 
     @Override
     @Transactional
     public PurchaseOrderItemResponseDTO updatePurchaseOrderItem(Long id, PurchaseOrderItemRequestDTO updateDTO) {
         log.info("Updating purchase order item {}", updateDTO);
 
-        // Fetch the existing purchase order item
         PurchaseOrderItem purchaseOrderItem = findPurchaseOrderItemById(id);
+
+        if (updateDTO.quantity() < purchaseOrderItem.getQuantityReceived()) {
+            throw new IllegalArgumentException(
+                    "Cannot reduce ordered quantity below already received quantity (" +
+                            purchaseOrderItem.getQuantityReceived() + ")."
+            );
+        }
 
         purchaseOrderItemMapper.partialUpdate(updateDTO, purchaseOrderItem);
 
@@ -36,8 +41,18 @@ public class PurchaseOrderItemServiceImpl implements  PurchaseOrderItemService {
     }
 
     @Override
+    @Transactional
     public void deletePurchaseOrderItem(Long id) {
-        purchaseOrderItemRepository.deleteById(id);
+        log.info("Deleting purchase order item with id {}", id);
+        PurchaseOrderItem purchaseOrderItem = findPurchaseOrderItemById(id);
+        if (purchaseOrderItem.getQuantityReceived() > 0) {
+            throw new InvalidPurchaseOrderStateException(
+                    "Cannot delete purchase order item that has already received " +
+                            purchaseOrderItem.getQuantityReceived() + " units."
+            );
+        }
+        purchaseOrderItemRepository.delete(purchaseOrderItem);
+        log.info("Purchase order item with id {} deleted", id);
     }
 
     @Override
@@ -49,9 +64,8 @@ public class PurchaseOrderItemServiceImpl implements  PurchaseOrderItemService {
         return purchaseOrderItemMapper.toResponseDTO(purchaseOrderItem);
     }
 
-
     private PurchaseOrderItem findPurchaseOrderItemById(Long id) {
         return purchaseOrderItemRepository.findById(id)
-                .orElseThrow(() -> new PurchaseOrderNotFoundException(id));
+                .orElseThrow(() -> new PurchaseOrderNotFoundException("Purchase order item not found with id: " + id));
     }
 }

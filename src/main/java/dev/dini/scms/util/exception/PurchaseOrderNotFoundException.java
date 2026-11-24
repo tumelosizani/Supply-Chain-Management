@@ -5,5 +5,7 @@ public class PurchaseOrderNotFoundException extends RuntimeException {
         super("Purchase order not found with id: " + id);
     }
 
-
+    public PurchaseOrderNotFoundException(String message) {
+        super(message);
+    }
 }

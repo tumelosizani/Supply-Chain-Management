@@ -13,6 +13,7 @@ public interface PurchaseOrderItemMapper {
     @Mapping(source = "productId", target = "product.id")
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "quantityReceived", ignore = true)
     PurchaseOrderItem toEntity(PurchaseOrderItemRequestDTO orderItemRequestDTO);
 
     @Mapping(source = "product.id", target = "productId")
@@ -25,6 +26,7 @@ public interface PurchaseOrderItemMapper {
     @Mapping(source = "productId", target = "product.id")
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "quantityReceived", ignore = true)
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void partialUpdate(PurchaseOrderItemRequestDTO orderItemRequestDTO, @MappingTarget PurchaseOrderItem purchaseOrderItem);
 }
