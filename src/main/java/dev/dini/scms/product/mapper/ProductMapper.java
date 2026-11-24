@@ -10,8 +10,6 @@ public interface ProductMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "inventories", ignore = true)
-    @Mapping(target = "orderItems", ignore = true)
     Product toEntity(ProductRequestDTO productResponseDTO);
 
     ProductResponseDTO toResponseDTO(Product product);
@@ -21,8 +19,6 @@ public interface ProductMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "inventories", ignore = true)
-    @Mapping(target = "orderItems", ignore = true)
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void partialUpdate(ProductRequestDTO productRequestDTO, @MappingTarget Product product);
 }

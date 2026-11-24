@@ -7,7 +7,6 @@ import dev.dini.scms.inventory.mapper.InventoryMapper;
 import dev.dini.scms.inventory.repository.InventoryRepository;
 import dev.dini.scms.product.entity.Product;
 import dev.dini.scms.product.service.ProductService;
-import dev.dini.scms.util.InventoryUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

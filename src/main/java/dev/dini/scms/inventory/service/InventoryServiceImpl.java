@@ -2,7 +2,6 @@ package dev.dini.scms.inventory.service;
 
 import dev.dini.scms.inventory.dto.*;
 import dev.dini.scms.inventory.entity.Inventory;
-import dev.dini.scms.util.InventoryUtil;
 import dev.dini.scms.util.exception.*;
 import dev.dini.scms.inventory.mapper.InventoryMapper;
 import dev.dini.scms.inventory.repository.InventoryRepository;

@@ -13,7 +13,6 @@ public interface CustomerOrderMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "items", ignore = true)
-    @Mapping(target = "shipments", ignore = true)
     @Mapping(target = "orderDate", ignore = true)
     CustomerOrder toEntity(CustomerOrderRequestDTO purchaseOrderRequestDTO);
 
@@ -23,7 +22,6 @@ public interface CustomerOrderMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "items", ignore = true)
-    @Mapping(target = "shipments", ignore = true)
     @Mapping(target = "orderDate", ignore = true)
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void partialUpdate(CustomerOrderRequestDTO purchaseOrderRequestDTO, @MappingTarget CustomerOrder customerOrder);

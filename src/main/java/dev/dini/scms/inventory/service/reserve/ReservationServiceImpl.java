@@ -1,10 +1,10 @@
 package dev.dini.scms.inventory.service.reserve;
 
+import dev.dini.scms.inventory.dto.InventoryReservationItemDTO;
 import dev.dini.scms.inventory.entity.Inventory;
 import dev.dini.scms.inventory.service.InventoryCalculationService;
 import dev.dini.scms.inventory.service.InventoryService;
-import dev.dini.scms.order.dto.CustomerOrderItemRequestDTO;
-import dev.dini.scms.util.InventoryUtil;
+import dev.dini.scms.inventory.service.InventoryUtil;
 import dev.dini.scms.util.exception.InsufficientInventoryException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,10 +49,10 @@ public class ReservationServiceImpl implements ReservationService {
 
     @Override
     @Transactional
-    public void reserveInventoryBatch(List<CustomerOrderItemRequestDTO> items) {
+    public void reserveInventoryBatch(List<InventoryReservationItemDTO> items) {
         log.info("Reserving inventory for {} items in batch", items.size());
 
-        for (CustomerOrderItemRequestDTO item : items) {
+        for (InventoryReservationItemDTO item : items) {
             if (item.productId() == null || item.quantity() <= 0) {
                 throw new IllegalArgumentException(
                         "Invalid item: Product ID and quantity must be set and positive. Found: Product ID = "

@@ -1,4 +1,4 @@
-package dev.dini.scms.util.config;
+package dev.dini.scms.seed;
 
 import dev.dini.scms.inventory.entity.Inventory;
 import dev.dini.scms.inventory.repository.InventoryRepository;
