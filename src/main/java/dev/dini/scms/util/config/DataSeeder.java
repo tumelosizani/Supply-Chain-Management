@@ -118,7 +118,7 @@ public class DataSeeder implements ApplicationRunner {
 
         List<PurchaseOrder> purchaseOrders = purchaseOrderRepository.saveAll(buildPurchaseOrders(suppliers, products, rng, now));
         List<Shipment> shipments = shipmentRepository.saveAll(buildShipments(orders, rng));
-        List<Payment> payments = paymentRepository.saveAll(buildPayments(orders, rng));
+        List<Payment> payments = paymentRepository.saveAll(buildPayments(orders, rng, now));
 
         int orderItems = orders.stream().mapToInt(o -> o.getItems().size()).sum();
         int poItems = purchaseOrders.stream().mapToInt(po -> po.getItems().size()).sum();
@@ -224,7 +224,7 @@ public class DataSeeder implements ApplicationRunner {
         List<CustomerOrder> orders = new ArrayList<>(CUSTOMER_ORDER_COUNT);
         for (int i = 0; i < CUSTOMER_ORDER_COUNT; i++) {
             CustomerOrderStatus status = statuses[i % statuses.length];
-            LocalDateTime orderDate = now.minusDays(rng.nextInt(90)).minusHours(rng.nextInt(24));
+            LocalDateTime orderDate = now.minusDays(1 + rng.nextInt(90)).minusHours(rng.nextInt(24));
             CitySpec city = CITIES[rng.nextInt(CITIES.length)];
 
             CustomerOrder order = new CustomerOrder();
@@ -341,16 +341,21 @@ public class DataSeeder implements ApplicationRunner {
         return shipments;
     }
 
-    private List<Payment> buildPayments(List<CustomerOrder> orders, Random rng) {
+    private List<Payment> buildPayments(List<CustomerOrder> orders, Random rng, LocalDateTime now) {
         PaymentMethod[] methods = PaymentMethod.values();
-        List<Payment> payments = new ArrayList<>(orders.size());
+        List<Payment> payments = new ArrayList<>();
         int seq = 1;
         for (CustomerOrder order : orders) {
+            // PENDING / NEW orders have not been paid yet; leaving them unpaid allows POST /api/payments
+            // and DELETE /api/orders/{id} to work without unique/FK constraint violations.
             PaymentStatus paymentStatus = switch (order.getStatus()) {
-                case DELIVERED, SHIPPED, CONFIRMED -> PaymentStatus.COMPLETED;
-                case PROCESSING, PENDING, NEW -> PaymentStatus.PENDING;
-                case CANCELLED -> rng.nextBoolean() ? PaymentStatus.REFUNDED : PaymentStatus.FAILED;
+                case DELIVERED, SHIPPED, CONFIRMED, PROCESSING -> PaymentStatus.COMPLETED;
+                case CANCELLED -> rng.nextBoolean() ? (rng.nextBoolean() ? PaymentStatus.REFUNDED : PaymentStatus.FAILED) : null;
+                case PENDING, NEW -> null;
             };
+            if (paymentStatus == null) {
+                continue;
+            }
 
             Payment p = new Payment();
             p.setCustomerOrder(order);
@@ -358,7 +363,7 @@ public class DataSeeder implements ApplicationRunner {
             p.setStatus(paymentStatus);
             p.setPaymentMethod(methods[rng.nextInt(methods.length)]);
             p.setPaymentDate(order.getOrderDate().plusMinutes(5 + rng.nextInt(120)));
-            p.setTransactionReference(String.format("PAY-2026-%05d", seq++));
+            p.setTransactionReference(String.format("PAY-%d-%05d", now.getYear(), seq++));
             payments.add(p);
         }
         return payments;
