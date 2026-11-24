@@ -121,3 +121,20 @@ export interface SupplierRequestDTO {
   website?: string;
   rating?: number;
 }
+
+export type ShipmentStatus = 'PENDING' | 'SHIPPED' | 'DELIVERED' | 'RETURNED';
+
+export interface ShipmentResponseDTO {
+  id: number;
+  orderId: number;
+  trackingNumber?: string;
+  carrier?: string;
+  status: ShipmentStatus;
+  shippedAt?: string;
+  deliveredAt?: string;
+}
+
+export interface ShipmentDispatchRequestDTO {
+  carrier: string;
+  trackingNumber: string;
+}
