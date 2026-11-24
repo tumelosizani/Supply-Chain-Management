@@ -35,7 +35,7 @@ dependencies {
     annotationProcessor("org.mapstruct:mapstruct-processor:${mapstructVersion}")
 
     // spring open api (3.x line targets Spring Boot 4 / Spring Framework 7)
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.2.1")
 }
 
 tasks.withType<Test> {
