@@ -51,7 +51,7 @@ public interface CustomerOrderService {
     CustomerOrderResponseDTO markDelivered(Long orderId);
 
     /**
-     * Confirms an order by changing its status to PROCESSING after inventory has been reserved.
+     * Confirms a PROCESSING order by deducting reserved inventory and changing its status to CONFIRMED.
      *
      * @param orderId the ID of the order to confirm
      * @return the updated order response
