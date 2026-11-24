@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Full Stack" type="CompoundRunConfigurationType">
-    <toRun name="ScmsApplication" type="GradleRunConfiguration" />
     <toRun name="Frontend" type="js.build_tools.npm" />
+    <toRun name="ScmsApplication" type="SpringBootApplicationConfigurationType" />
     <method v="2" />
   </configuration>
 </component>
