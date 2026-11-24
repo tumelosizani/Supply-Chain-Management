@@ -1,6 +1,6 @@
 import { CheckCircle2, PackageCheck, Send, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { apiRequest } from '../api/client';
 import { StatusBadge } from '../components/StatusBadge';
 import type {
@@ -37,6 +37,9 @@ function formatTimeline(shipment: ShipmentResponseDTO): string {
 }
 
 export function ShipmentsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const orderIdParam = searchParams.get('orderId');
+
   const [shipments, setShipments] = useState<ShipmentResponseDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,14 +56,15 @@ export function ShipmentsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await apiRequest<ShipmentResponseDTO[]>('/shipments');
+      const endpoint = orderIdParam ? `/shipments/order/${orderIdParam}` : '/shipments';
+      const res = await apiRequest<ShipmentResponseDTO[]>(endpoint);
       setShipments(res);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load shipments');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [orderIdParam]);
 
   useEffect(() => {
     void loadShipments();
@@ -208,7 +212,16 @@ export function ShipmentsPage() {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {orderIdParam && (
+            <button
+              onClick={() => setSearchParams({})}
+              className="mr-2 inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+            >
+              Order #{orderIdParam}
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
           {STATUS_FILTERS.map((status) => (
             <button
               key={status}

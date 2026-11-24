@@ -118,7 +118,7 @@ export function OrdersPage() {
               )}
               {hasFulfillment && (
                 <Link
-                  to="/shipments"
+                  to={`/shipments?orderId=${order.id}`}
                   className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-200"
                 >
                   <PackageCheck className="h-3.5 w-3.5" />
