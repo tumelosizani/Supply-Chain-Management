@@ -23,6 +23,19 @@ function formatDateTime(value?: string) {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
 }
 
+function formatTimeline(shipment: ShipmentResponseDTO): string {
+  switch (shipment.status) {
+    case 'PENDING':
+      return 'Awaiting dispatch';
+    case 'SHIPPED':
+      return shipment.shippedAt ? `Shipped ${formatDateTime(shipment.shippedAt)}` : 'Shipped';
+    case 'DELIVERED':
+      return shipment.deliveredAt ? `Delivered ${formatDateTime(shipment.deliveredAt)}` : 'Delivered';
+    case 'RETURNED':
+      return shipment.shippedAt ? `Returned (shipped ${formatDateTime(shipment.shippedAt)})` : 'Returned';
+  }
+}
+
 export function ShipmentsPage() {
   const [shipments, setShipments] = useState<ShipmentResponseDTO[]>([]);
   const [loading, setLoading] = useState(true);
@@ -139,11 +152,7 @@ export function ShipmentsPage() {
           {shipment.trackingNumber || '—'}
         </td>
         <td className="px-4 py-3 text-xs text-slate-500">
-          {shipment.status === 'DELIVERED'
-            ? `Delivered ${formatDateTime(shipment.deliveredAt)}`
-            : shipment.shippedAt
-              ? `Shipped ${formatDateTime(shipment.shippedAt)}`
-              : 'Awaiting dispatch'}
+          {formatTimeline(shipment)}
         </td>
         <td className="px-4 py-3 text-right">
           {shipment.status === 'PENDING' && (
