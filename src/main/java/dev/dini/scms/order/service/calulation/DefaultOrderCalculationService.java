@@ -2,8 +2,7 @@ package dev.dini.scms.order.service.calulation;
 
 import dev.dini.scms.order.entity.CustomerOrder;
 import dev.dini.scms.order.entity.CustomerOrderItem;
-import dev.dini.scms.product.entity.Product;
-import dev.dini.scms.product.repository.ProductRepository;
+import dev.dini.scms.product.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,7 +15,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DefaultOrderCalculationService implements OrderCalculationService {
 
-    private final ProductRepository productRepository;
+    private final ProductService productService;
 
     @Override
     public void calculateTotalCost(CustomerOrder order) {
@@ -32,8 +31,6 @@ public class DefaultOrderCalculationService implements OrderCalculationService {
     }
 
     private BigDecimal getUnitPrice(Long productId) {
-        return productRepository.findById(productId)
-                .map(Product::getUnitPrice)
-                .orElseThrow(() -> new IllegalArgumentException("Product not found with ID: " + productId));
+        return productService.getEntityById(productId).getUnitPrice();
     }
 }

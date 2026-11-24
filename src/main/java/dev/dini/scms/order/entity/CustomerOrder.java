@@ -1,6 +1,5 @@
 package dev.dini.scms.order.entity;
 
-import dev.dini.scms.shipment.entity.Shipment;
 import dev.dini.scms.util.Address;
 import dev.dini.scms.util.BaseEntity;
 import jakarta.persistence.*;
@@ -34,8 +33,5 @@ public class CustomerOrder extends BaseEntity {
 
     @OneToMany(mappedBy = "customerOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CustomerOrderItem> items = new ArrayList<>();
-
-    @OneToMany(mappedBy = "customerOrder", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Shipment> shipments=  new ArrayList<>();
 
 }
