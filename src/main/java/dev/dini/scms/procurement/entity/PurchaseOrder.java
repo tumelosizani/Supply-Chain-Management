@@ -8,7 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -23,9 +23,9 @@ public class PurchaseOrder extends BaseEntity {
     @JoinColumn(name = "supplier_id", nullable = false)
     private Supplier supplier;
 
-    private Date orderDate;
+    private LocalDateTime orderDate;
 
-    private Date expectedDeliveryDate;
+    private LocalDateTime expectedDeliveryDate;
 
     @Enumerated(EnumType.STRING)
     private PurchaseOrderStatus status;
