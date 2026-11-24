@@ -5,12 +5,12 @@ import dev.dini.scms.util.dto.AddressDTO;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public record CustomerOrderResponseDTO(
         Long id,
-        Date orderDate,
+        LocalDateTime orderDate,
         CustomerOrderStatus status,
         AddressDTO shippingAddress,
         List<CustomerOrderItemResponseDTO> items,

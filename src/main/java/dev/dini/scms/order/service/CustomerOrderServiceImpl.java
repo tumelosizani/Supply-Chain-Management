@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Slf4j
@@ -42,7 +43,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         inventoryAvailabilityService.ensureSufficientInventory(createDTO.items());
 
         var order = customerOrderMapper.toEntity(createDTO);
-        order.setOrderDate(new Date());
+        order.setOrderDate(LocalDateTime.now());
         order.setStatus(CustomerOrderStatus.PENDING);
 
         List<CustomerOrderItem> items = createOrderItemsFromDTOs(createDTO.items(), order);
